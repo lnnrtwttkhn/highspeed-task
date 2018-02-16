@@ -20,7 +20,7 @@ Screen('Preference','TextEncodingLocale','UTF-8'); % set text encoding preferenc
 Screen('Preference', 'TextRenderer', 0);
 
 % OPEN WINDOW
-Parameters.window = Screen('OpenWindow', Parameters.screenId); % open screen
+Parameters.window = Screen('OpenWindow', Parameters.screenID); % open screen
 Priority(MaxPriority(Parameters.window)); % raise Matlab to realtime-priority mode to get the highest suitable priority
 Screen('TextFont', Parameters.window, Parameters.textFont); % select specific text font
 Screen('TextSize', Parameters.window, Parameters.textSize); % select specific text size
@@ -31,8 +31,8 @@ RestrictKeysForKbCheck([KbName('LeftArrow'),KbName('RightArrow')]); % restrict k
 Parameters.flipInterval = Screen('GetFlipInterval', Parameters.window); % get the monitor flip interval
 
 % START SCREEN: WELCOME PARTICIPANTS TO THE EXPERIMENT
-DrawFormattedText(Parameters.window,'Willkommen zur Aufgabe "Visuelle Objekte Erkennen"!','center','center',Parameters.colorBlack);
-DrawFormattedText(Parameters.window, 'Start mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.colorBlack);
+DrawFormattedText(Parameters.window,'Willkommen zur Aufgabe "Visuelle Objekte Erkennen"!','center','center',Parameters.textColorBlack);
+DrawFormattedText(Parameters.window, 'Start mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
 Screen('Flip',Parameters.window); % flip to the screen
 VBLTime = KbPressWait(Parameters.device); % save key press time
 waitSecs = 0; % define wait time
@@ -64,7 +64,7 @@ for run = Parameters.subjectInfo.run : Basics.nRunSession
         
         % SHOW TARGET CUE (SEQUENCE TRIALS ONLY)
         if ismember(cond,[idxFlash idxOneTwo idxOneTwoExtra]) % check if the current trial is a sequence trial
-            DrawFormattedText(Parameters.window,Data(cond).data.targetName{Sets(cond).set.count},'center','center',Parameters.colorBlack); % draw the target name to the screen
+            DrawFormattedText(Parameters.window,Data(cond).data.targetName{Sets(cond).set.count},'center','center',Parameters.textColorBlack); % draw the target name to the screen
             Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
             VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
             Data(cond).data.tFlipCue(Sets(cond).set.count) = VBLTime; % save flip time
@@ -78,7 +78,7 @@ for run = Parameters.subjectInfo.run : Basics.nRunSession
         
         % SHOW FIXATION CROSS (BEFORE STIMULI LOOP; SEQUENCE TRIALS ONLY)
         if ismember(cond,[idxFlash idxOneTwo idxOneTwoExtra])
-            DrawFormattedText(Parameters.window,'+','center','center',Parameters.colorBlack); % draw fixation cross to screen
+            DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
             Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
             VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
             Data(cond).data.tFlipFix(Sets(cond).set.count) = VBLTime; % save flip time
@@ -94,7 +94,7 @@ for run = Parameters.subjectInfo.run : Basics.nRunSession
             
             % SHOW FIXATION CROSS (WITHIN STIMULI LOOP; TRAINING TRIALS ONLY)
             if ismember(cond,idxTrain)
-                DrawFormattedText(Parameters.window,'+','center','center',Parameters.colorBlack); % draw fixation cross to screen
+                DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
                 Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished#
                 VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
                 Data(cond).data.tFlipFix(dataIndex) = VBLTime; % save flip time
@@ -181,20 +181,20 @@ for run = Parameters.subjectInfo.run : Basics.nRunSession
         if ismember(cond,[idxFlash idxOneTwo idxOneTwoExtra]) % only on sequence trials
             
             % WAITING PERIOD AFTER LAST STIMULUS (WAIT UNTIL 16s HAVE ELAPSED)
-            DrawFormattedText(Parameters.window,'+','center','center',Parameters.colorBlack); % draw fixation cross to screen
+            DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
             Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
             Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
             waitSecs = Basics.tMaxSeqTrial; % define wait time
             resume(Sounds.soundWaitPlayer); % start to play sound during waiting period
             
             % SHOW RESPONSE OPTIONS
-            DrawFormattedText(Parameters.window,Data(cond).data.targetName{dataIndex},'center','center',Parameters.colorBlack); % draw text to screen
+            DrawFormattedText(Parameters.window,Data(cond).data.targetName{dataIndex},'center','center',Parameters.textColorBlack); % draw text to screen
             if Data(cond).data.keyTarget(dataIndex) == KbName('LeftArrow') % target is left
-                DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPos(dataIndex)),Parameters.posLeft, Parameters.centerY + Parameters.textSize * 5,Parameters.colorBlack); % show target on the left side
-                DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPosAlt(dataIndex)),Parameters.posRight, Parameters.centerY + Parameters.textSize * 5,Parameters.colorBlack); % show non-target on the right side
+                DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPos(dataIndex)),Parameters.screenPosLeft, Parameters.screenCenterY + Parameters.textSize * 5,Parameters.textColorBlack); % show target on the left side
+                DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPosAlt(dataIndex)),Parameters.screenPosRight, Parameters.screenCenterY + Parameters.textSize * 5,Parameters.textColorBlack); % show non-target on the right side
             elseif Data(cond).data.keyTarget(dataIndex) == KbName('RightArrow') % target is right
-                DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPos(dataIndex)),Parameters.posRight, Parameters.centerY + Parameters.textSize * 5,Parameters.colorBlack); % show target on the right side
-                DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPosAlt(dataIndex)),Parameters.posLeft, Parameters.centerY + Parameters.textSize * 5,Parameters.colorBlack); % show target on the left side
+                DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPos(dataIndex)),Parameters.screenPosRight, Parameters.screenCenterY + Parameters.textSize * 5,Parameters.textColorBlack); % show target on the right side
+                DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPosAlt(dataIndex)),Parameters.screenPosLeft, Parameters.screenCenterY + Parameters.textSize * 5,Parameters.textColorBlack); % show target on the left side
             end
             Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
             % Only start to show response options after the waiting period has elapsed (i.e., after 16 seconds since the first stimulus):
@@ -245,11 +245,11 @@ for run = Parameters.subjectInfo.run : Basics.nRunSession
     
     % END OF RUN: TAKE A BREAK
     if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
-        DrawFormattedText(Parameters.window,'Pause','center',Parameters.textSize * 2,Parameters.colorBlack);
-        DrawFormattedText(Parameters.window,sprintf('Sie haben Durchgang %d von %d geschafft.',run,Basics.nRunSession),'center',Parameters.textSize * 3,Parameters.colorBlack);
+        DrawFormattedText(Parameters.window,'Pause','center',Parameters.textSize * 2,Parameters.textColorBlack);
+        DrawFormattedText(Parameters.window,sprintf('Sie haben Durchgang %d von %d geschafft.',run,Basics.nRunSession),'center',Parameters.textSize * 3,Parameters.textColorBlack);
         str = sprintf('Sie haben bisher %.2f Euro verdient!',Basics.totalWinAll);
-        DrawFormattedText(Parameters.window,str,'center','center',Parameters.colorBlack);
-        DrawFormattedText(Parameters.window, 'Weiter mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.colorBlack);
+        DrawFormattedText(Parameters.window,str,'center','center',Parameters.textColorBlack);
+        DrawFormattedText(Parameters.window, 'Weiter mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
         Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
         Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
         fprintf('End run %d of %d.\n',run,Basics.nRunSession) % display task progress
@@ -276,14 +276,14 @@ stop(Sounds.soundWaitPlayer); % stop to play sound
 KbQueueStop(Parameters.device); % stop the response queue
 
 % END OF THE TASK:
-DrawFormattedText(Parameters.window,'Ende der Aufgabe','center',Parameters.textSize * 2,Parameters.colorBlack);
+DrawFormattedText(Parameters.window,'Ende der Aufgabe','center',Parameters.textSize * 2,Parameters.textColorBlack);
 if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
     str = sprintf('Sie haben insgesamt %.2f Euro verdient!',Basics.totalWinAll);
 elseif strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
     str = sprintf('Sie haetten insgesamt %.2f Euro verdient!',Basics.totalWinAll);
 end
-DrawFormattedText(Parameters.window,str,'center','center',Parameters.colorBlack);
-DrawFormattedText(Parameters.window, 'Bitte wenden Sie sich an die Versuchsleitung.','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.colorBlack);
+DrawFormattedText(Parameters.window,str,'center','center',Parameters.textColorBlack);
+DrawFormattedText(Parameters.window, 'Bitte wenden Sie sich an die Versuchsleitung.','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
 Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
 Screen('Flip',Parameters.window); % flip to the screen
 KbPressWait; % save key press time

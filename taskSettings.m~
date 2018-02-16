@@ -23,7 +23,7 @@ Parameters.nameOS = OSName; % save information about operating system
 Parameters.nameMatlabVersion = ['R' version('-release')]; % save information about operating systemversion('-release')
 
 % STUDY DETAILS
-Parameters.nameStudy = 'highspeed';
+Parameters.nameStudy = 'HighSpeed';
 
 % SET ALL NECESSARY TASK PATHS AND GET SYSTEM INFORMATION
 Parameters.pathTask = fullfile(Parameters.baseLocation,'Seafile',Parameters.nameStudy); % path to the task folder
@@ -88,11 +88,62 @@ end
 
 Parameters = orderfields(Parameters); % orders all fields in the structure alphabetically
 
+%%
+
+% CHECK FOR PERVIOUS DATA FOLDER:
+Parameters.dirDataAll = dir(Parameters.pathData); % get list of files in data directory
+Parameters.dirDataAll = Parameters.dirDataAll(~cellfun('isempty', {Parameters.dirData.date}));
+Parameters.dirDataFilesNames = {Parameters.dirData.name}; % get cell array of files names in data directory
+Parameters.subjectFolder = strcat(Parameters.nameStudy,'_',Parameters.subjectInfo.id); % subject data folder
+Parameters.dataFolderIndex = find(contains(Parameters.dirDataFileNames,Parameters.subjectFolder)); % index of the matching folder
+
+% IF DATA FOLDER IS FOUND, CHECK THE DATA FILES INSIDE THE FOLDER:
+if any(Parameters.dataFolderIndex)
+   
+    Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.dataFolder));
+    Parameters.dirDataSub = {Parameters.dirDataRuns.name}; % get cell array of files names in data directory
+   
+    
+    
+    % GET HIGHEST SESSION:
+    dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
+    maxSession = cellfun(@str2double,regexp(Parameters.dirDataSub,'(?<=sess)-*\d+','match')); % find the run numbers of the previous session
+    [sess,~] = max(maxSession); % get the index of the last run of the last session
+    
+    % GET HIGHEST RUN:
+    pattern = ['highspeedMRI_',Parameters.studyMode,'_sub',Parameters.subjectInfo.id,'_sess',num2str(sess)]; % check study mode and id
+    idx = startsWith(Parameters.dataFiles,pattern); % now find all the files of the subject of the previous session
+    dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
+    maxRun = cellfun(@str2double,regexp(dataMatch,'(?<=run)-*\d+','match')); % find the run numbers of the previous session
+    [run,~] = max(maxRun); % get the index of the last run of the last session
+    
+    % LOAD DATA FILE:
+    pattern = ['highspeedMRI_',Parameters.studyMode,'_sub',Parameters.subjectInfo.id,'_sess',num2str(sess),'_run',num2str(run)]; % check study mode and id
+    load(fullfile(Parameters.pathData,pattern),'Data','Sets','Basics') % load the previous data file
+    fprintf('Loading previous data: %s\n',pattern) % display task progress
+    
+    
+    
+    
+    
+    
+elseif isempty(Parameters.dataFolderIndex)
+    mkdir(Parameters.pathData,Parameters.dataFolder); % create a new data directory for the current subject
+end
+
+
+
+
+if any contains(Parameters.dirDataFolder,Parameters.subjectInfo.id)
+
+
+
+
 %% INPUT SUBJECT INFO
 while true
     
     % SELECT THE STUDY MODE:
-    str = {'instructions','practice','behavioral','mri'}; % study mode options
+    str = {'Instructions','Practice','Pilot','MRI'}; % study mode options
     [selection,~] = listdlg('PromptString','Please choose the study mode:',...
         'SelectionMode','single','ListString',str,'Name','Study mode','ListSize',[160,70]);
     Parameters.studyMode = str{selection}; % save selection of the study mode
@@ -158,66 +209,6 @@ while true
         end
     end
 end
-
-
-
-
-
-%%
-
-Parameters.subjectFolder = strcat(Parameters.nameStudy,'_',Parameters.subjectInfo.id); % subject data folder
-
-
-% CHECK FOR PERVIOUS DATA FOLDER:
-Parameters.dirData = dir(Parameters.pathData); % get list of files in data directory
-Parameters.dirData = Parameters.dirData(~cellfun('isempty', {Parameters.dirData.date}));
-Parameters.dirData = {Parameters.dirData.name}; % get cell array of files names in data directory
-Parameters.dirDataSubFolder = find(contains(Parameters.dirDataFileNames,Parameters.subjectFolder)); % index of the matching folder
-
-% IF DATA FOLDER IS FOUND, CHECK THE DATA FILES INSIDE THE FOLDER:
-if any(Parameters.dirDataSubFolder)
-   
-    % DATA FILES IN SUB FOLDER
-    Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFolder));
-    Parameters.dirDataSub = {Parameters.dirDataRuns.name}; % get cell array of files names in data directory
-   
-    find(contains(Parameters.dirDataSub,Parameters.nameStudy))
-    
-    % GET HIGHEST SESSION:
-    dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
-    maxSession = cellfun(@str2double,regexp(Parameters.dirDataSub,'(?<=sess)-*\d+','match'),'UniformOutput',false); % find the run numbers of the previous session
-    [sess,~] = max(maxSession); % get the index of the last run of the last session
-    
-    % GET HIGHEST RUN:
-    pattern = ['highspeedMRI_',Parameters.studyMode,'_sub',Parameters.subjectInfo.id,'_sess',num2str(sess)]; % check study mode and id
-    idx = startsWith(Parameters.dataFiles,pattern); % now find all the files of the subject of the previous session
-    dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
-    maxRun = cellfun(@str2double,regexp(dataMatch,'(?<=run)-*\d+','match')); % find the run numbers of the previous session
-    [run,~] = max(maxRun); % get the index of the last run of the last session
-    
-    % LOAD DATA FILE:
-    pattern = ['highspeedMRI_',Parameters.studyMode,'_sub',Parameters.subjectInfo.id,'_sess',num2str(sess),'_run',num2str(run)]; % check study mode and id
-    load(fullfile(Parameters.pathData,pattern),'Data','Sets','Basics') % load the previous data file
-    fprintf('Loading previous data: %s\n',pattern) % display task progress
-    
-    
-    
-    
-    
-    
-elseif isempty(Parameters.dataFolderIndex)
-    mkdir(Parameters.pathData,Parameters.dataFolder); % create a new data directory for the current subject
-end
-
-
-
-
-if any contains(Parameters.dirDataFolder,Parameters.subjectInfo.id)
-
-
-
-
-
 
 %%
 
