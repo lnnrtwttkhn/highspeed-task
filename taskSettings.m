@@ -23,7 +23,7 @@ Parameters.nameOS = OSName; % save information about operating system
 Parameters.nameMatlabVersion = ['R' version('-release')]; % save information about operating systemversion('-release')
 
 % STUDY DETAILS
-Parameters.nameStudy = 'highspeed';
+Parameters.nameStudy = 'highspeed_task';
 
 % SET ALL NECESSARY TASK PATHS AND GET SYSTEM INFORMATION
 Parameters.pathTask = fullfile(Parameters.baseLocation,'Seafile',Parameters.nameStudy); % path to the task folder
@@ -85,6 +85,7 @@ if ismac
 elseif ispc
   Parameters.device =  Parameters.deviceKeyNames; 
 end
+clear k % clear unneccessary variable
 
 Parameters = orderfields(Parameters); % orders all fields in the structure alphabetically
 
@@ -113,7 +114,7 @@ while true
     
     % IF PRACTICE, DEFINE CONDITION MODE:
     if strcmp(Parameters.studyMode,'instructions')
-        str = {'oddball','sequence'}; % study mode options
+        str = {'condition 1','condition 2'}; % study mode options
         [selection,~] = listdlg('PromptString','Please choose the instructions mode:',...
             'SelectionMode','single','ListString',str,'Name','Practice mode','ListSize',[160,70]);
         Parameters.instructionsMode = str{selection}; % save selection of the study mode
@@ -159,29 +160,37 @@ while true
     end
 end
 
-
-
-
-
 %%
 
-Parameters.subjectFolder = strcat(Parameters.nameStudy,'_',Parameters.subjectInfo.id); % subject data folder
+Parameters.subjectFolder = strjoin({Parameters.nameStudy,'sub',Parameters.subjectInfo.id},'_'); % create name of subject data folder
+Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFolder)); % get list of files in data directory
+Parameters.dirDataSub = {Parameters.dirData.name}; % get cell array of files names in data directory
+
+pattern = strjoin({Parameters.subjectFolder,Parameters.studyMode,...
+    'session',num2str(Parameters.subjectInfo.session),...
+    'run',num2str(Parameters.subjectInfo.run)},'_');
 
 
-% CHECK FOR PERVIOUS DATA FOLDER:
-Parameters.dirData = dir(Parameters.pathData); % get list of files in data directory
-Parameters.dirData = Parameters.dirData(~cellfun('isempty', {Parameters.dirData.date}));
-Parameters.dirData = {Parameters.dirData.name}; % get cell array of files names in data directory
-Parameters.dirDataSubFolder = find(contains(Parameters.dirDataFileNames,Parameters.subjectFolder)); % index of the matching folder
+
+% CHECK IF SUBJECT FOLDER ALREADY EXISTS
 
 % IF DATA FOLDER IS FOUND, CHECK THE DATA FILES INSIDE THE FOLDER:
-if any(Parameters.dirDataSubFolder)
-   
+if any(contains(Parameters.dirData,Parameters.subjectFile))
     % DATA FILES IN SUB FOLDER
-    Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFolder));
-    Parameters.dirDataSub = {Parameters.dirDataRuns.name}; % get cell array of files names in data directory
-   
+    fprintf('Loading previous subject folder: %s\n',Parameters.subjectFile);
+    Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFile));
+    Parameters.dirDataSub = {Parameters.dirDataSub.name}; % get cell array of files names in data directory
+    Parameters.subjectFile = strjoin({Parameters.subjectFile,Parameters.studyMode},'_');
+    if any(contains(Parameters.dirDataSub,Parameters.subjectFile))
+        fprintf('Loading previous study mode: %s\n',Parameters.subjectFile);
+        
+    
+        
+    end
     find(contains(Parameters.dirDataSub,Parameters.nameStudy))
+    
+    strjoin({Parameters.subjectFolder,Parameters.studyMode},'_')
+    
     
     % GET HIGHEST SESSION:
     dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
