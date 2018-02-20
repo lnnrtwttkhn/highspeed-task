@@ -4,7 +4,7 @@ function [Sets,Data,Basics,Parameters,Sounds] = taskSettings
 % M.Sc. Lennart Wittkuhn | Independent Max Planck Research Group NeuroCode
 % Max Planck Institute for Human Development, Berlin, Germany
 % Contact: wittkuhn@mpib-berlin.mpg.de
-% 2018
+% 2017 - 2018
 
 %% DEFINE ALL TASK INDEPENDENT PARAMETERS:
 
@@ -15,17 +15,14 @@ elseif ispc
     Parameters.baseLocation = '/'; % base location for Windows
 end
 
-
 % GET COMPUTER DETAILS
 Parameters.nameComputer = computer; % save information about computer
 Parameters.nameHost = char(getHostName(java.net.InetAddress.getLocalHost));
 Parameters.nameOS = OSName; % save information about operating system
 Parameters.nameMatlabVersion = ['R' version('-release')]; % save information about operating systemversion('-release')
 
-% STUDY DETAILS
-Parameters.nameStudy = 'highspeed_task';
-
 % SET ALL NECESSARY TASK PATHS AND GET SYSTEM INFORMATION
+Parameters.nameStudy = 'highspeed_task';
 Parameters.pathTask = fullfile(Parameters.baseLocation,'Seafile',Parameters.nameStudy); % path to the task folder
 Parameters.pathScripts = fullfile(Parameters.pathTask,'scripts'); % path to the task script folder
 Parameters.pathPlots = fullfile(Parameters.pathTask,'plots'); % path to the task plot folder
@@ -37,6 +34,11 @@ cd(Parameters.pathScripts) % set the current directory to the script folder
 % RUN KBQUEUE COMMANDS ONCE, TO AVOID CONFLICT WITH GETCHAR
 KbQueueCreate; % initalize cue
 KbQueueStop; % stop queue
+
+% DUMMY CALLS TO PSYCHTOOLBOX FUNCTIONS:
+KbCheck(-1); % dummy call to KbCheck
+WaitSecs(0.1); % dummay call to WaitSecs
+GetSecs; clear ans; % dummy call to GetSecs
 
 % INITALIZE RANDOM NUMBER GENERATOR:
 rng(sum(100*clock)); % initalize random number generator
@@ -93,7 +95,7 @@ Parameters = orderfields(Parameters); % orders all fields in the structure alpha
 while true
     
     % SELECT THE STUDY MODE:
-    str = {'instructions','practice','behavioral','mri'}; % study mode options
+    str = {'instructions_condition_1','instructions_condition_2','practice','behavioral','mri'}; % study mode options
     [selection,~] = listdlg('PromptString','Please choose the study mode:',...
         'SelectionMode','single','ListString',str,'Name','Study mode','ListSize',[160,70]);
     Parameters.studyMode = str{selection}; % save selection of the study mode
@@ -164,12 +166,14 @@ end
 
 Parameters.subjectFolder = strjoin({Parameters.nameStudy,'sub',Parameters.subjectInfo.id},'_'); % create name of subject data folder
 Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFolder)); % get list of files in data directory
-Parameters.dirDataSub = {Parameters.dirData.name}; % get cell array of files names in data directory
+Parameters.dirDataSub = {Parameters.dirDataSub.name}; % get cell array of files names in data directory
 
-pattern = strjoin({Parameters.subjectFolder,Parameters.studyMode,...
+Parameters.subjectFile = strjoin({Parameters.subjectFolder,Parameters.studyMode,...
     'session',num2str(Parameters.subjectInfo.session),...
     'run',num2str(Parameters.subjectInfo.run)},'_');
 
+
+any(contains(Parameters.dirData,pattern))
 
 
 % CHECK IF SUBJECT FOLDER ALREADY EXISTS
@@ -221,64 +225,6 @@ end
 
 
 
-if any contains(Parameters.dirDataFolder,Parameters.subjectInfo.id)
-
-
-
-
-
-
-%%
-
-if strcmp(Parameters.studyMode,'mri') 
-    Basics.nSession = 2; % mri experiment consists of two sessions
-    Basics.nRun = 8;
-elseif strcmp(Parameters.studyMode,'behavioral')
-    Basics.nSession = 1; % behavioral experiment and instructions consists of one session
-    Basics.nRun = 8;
-elseif strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
-    Basics.nSession = 1; % behavioral experiment and instructions consists of one session
-%     Basics.nRun = 8;
-end
-
-if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
-    if strcmp(Parameters.studyMode,'instructions') && strcmp(Parameters.instructionsMode,'oddball')
-        Basics.trialStructure = ones(5,1);
-    elseif strcmp(Parameters.studyMode,'instructions') && strcmp(Parameters.instructionsMode,'sequence')
-        Basics.trialStructure = transpose([2 2 3 3 4]);
-    elseif strcmp(Parameters.studyMode,'practice')    
-        Basics.trialStructure = reshape(transpose(horzcat(ones(5,1),Shuffle(vertcat(repmat(2,2,1),repmat(3,2,1),repmat(4,1,1))))),10,1);
-    end
-    Basics.nTrialsRun = length(Basics.trialStructure);
-    Basics.nTrialsSession = length(Basics.trialStructure)/Basics.nSession;
-    Basics.breakTrials = 1:Basics.nTrialsRun:length(Basics.trialStructure); % compute break trials
-    Basics.nRunAll = numel(Basics.breakTrials); % get the maximum number of task block
-    Basics.nRunSession = Basics.nRunAll/Basics.nSession; % get the maximum number of task block
-    Basics.breakTrials = reshape(Basics.breakTrials,Basics.nRunSession,Basics.nSession);
-end
-
-
-%% CHECK THE DATA DIRECTORY:
-
-    if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
-        if strcmp(Parameters.studyMode,'instructions') && strcmp(Parameters.instructionsMode,'oddball')
-            Basics.trialStructure = ones(5,1);
-        elseif strcmp(Parameters.studyMode,'instructions') && strcmp(Parameters.instructionsMode,'sequence')
-            Basics.trialStructure = transpose([2 2 3 3 4]);
-        elseif strcmp(Parameters.studyMode,'practice')
-            Basics.trialStructure = reshape(transpose(horzcat(ones(5,1),Shuffle(vertcat(repmat(2,2,1),repmat(3,2,1),repmat(4,1,1))))),10,1);
-        end
-        Basics.nTrialsRun = length(Basics.trialStructure);
-        Basics.nTrialsSession = length(Basics.trialStructure)/Basics.nSession;
-        Basics.breakTrials = 1:Basics.nTrialsRun:length(Basics.trialStructure); % compute break trials
-        Basics.nRunAll = numel(Basics.breakTrials); % get the maximum number of task block
-        Basics.nRunSession = Basics.nRunAll/Basics.nSession; % get the maximum number of task block
-        Basics.breakTrials = reshape(Basics.breakTrials,Basics.nRunSession,Basics.nSession);
-    end
-    
-    return
-
-end
 
 %%
 
@@ -286,12 +232,49 @@ idxFlash = 2;
 idxOneTwo = 3;
 idxOneTwoExtra = 4;
 
-%% GENERAL TASK SETTINGS:
+% DEFINE TOTAL NUMBER OF RUNS AND SESSIONS
+if strcmp(Parameters.studyMode,'mri') 
+    Basics.nSession = 2;
+    Basics.nRun = 8;
+elseif strcmp(Parameters.studyMode,'behavioral')
+    Basics.nSession = 1;
+    Basics.nRun = 8;
+elseif strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
+    Basics.nSession = 1;
+    Basics.nRun = 1;
+end
 
-Basics.dirStim = dir(Parameters.pathStimuli); % get info from stimulus files directory
-Basics.dirStim = Basics.dirStim(~ismember({Basics.dirStim.name},{'.','..','.DS_Store','.Rhistory'})); % get rid of '.', '..' and '.DS_Store' in d.name
-Basics.stimNames = transpose({Basics.dirStim.name}); % list all stimuli names (including the .jpg extension)
-Basics.stimNames = regexprep(Basics.stimNames,'.jpg',''); % get rid of the .jpg extension
+% DEFINE THE TRIAL STRUCTURE
+if strcmp(Parameters.studyMode,'instructions_condition_1')
+    Basics.trialStructure = ones(5,1);
+elseif strcmp(Parameters.studyMode,'instructions_condition_2')
+    Basics.trialStructure = transpose([2 2 3 3 4]);
+elseif strcmp(Parameters.studyMode,'practice')
+    Basics.trialStructure = reshape(transpose(horzcat(ones(5,1),Shuffle(vertcat(repmat(2,2,1),repmat(3,2,1),repmat(4,1,1))))),10,1);
+elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
+    % CREATE A SHUFFLED ORDER OF ALL SEQUENCE TRIALS
+    Basics.allSeqTrials = [repmat(idxFlash,Sets(2).set.nTrials,1);repmat(idxOneTwo,Sets(3).set.nTrials,1);repmat(idxOneTwoExtra,Sets(4).set.nTrials,1)]; % create array with all sequence trials
+    Basics.allSeqTrials = Shuffle(Basics.allSeqTrials); % shuffle all sequence trials
+    % CREATE THE TRIAL SEQUENCE, WITH ODDBALL, SEQUENCE AND REPETITION TRIALS INTERLEAVED
+    Basics.trialStructure = [ones(length(Basics.allSeqTrials),1),Basics.allSeqTrials]; % create trial structure as matrix
+    Basics.trialStructure = reshape(transpose(Basics.trialStructure),[numel(Basics.trialStructure),1]);
+end
+
+% DEFINE TRIAL BASICS
+Basics.nTrials = length(Basics.trialStructure); % number of trials in total
+Basics.nTrialsRun = Basics.nTrials/Basics.nRun; % number of trials per run
+Basics.nTrialsSession = Basics.nTrials/Basics.nSession; % number of trials per session
+Basics.nRunSession = Basics.nRun/Basics.nSession; % number of runs per session
+Basics.breakTrials = reshape(1:Basics.nTrialsRun:Basics.nTrials,Basics.nRunSession,Basics.nSession); % define break trials
+
+%% TASK BASICS
+% In this section, variables are defined that are relevant for all task
+% conditions. They are the same for all task conditions.
+% Basics.dirStim = dir(Parameters.pathStimuli); % get info from stimulus files directory
+% Basics.dirStim = Basics.dirStim(~ismember({Basics.dirStim.name},{'.','..','.DS_Store','.Rhistory'})); % get rid of '.', '..' and '.DS_Store' in d.name
+% Basics.stimNames = transpose({Basics.dirStim.name}); % list all stimuli names (including the .jpg extension)
+% Basics.stimNames = regexprep(Basics.stimNames,'.jpg',''); % get rid of the .jpg extension
+Basics.stimNames = transpose({'Gesicht','Haus','Katze','Schuh','Stuhl'}); % list all stimuli names
 Basics.nStimCat = numel(Basics.stimNames); % number of stimulus categories
 Basics.stimOrient = [0 180]; % define stimulus orientations (0 = upright; 180 = upside-down)
 Basics.reward = 0.03; % reward in cents for each correct response
@@ -305,21 +288,25 @@ for i = 1:Basics.nStimCat % preload the task stimuli (pictures)
     theImageLocation = fullfile(Parameters.pathStimuli,[currentStimulusName,'.jpg']);% create image path
     Basics.stimImages(i).img = imread(theImageLocation); % read the image
 end
-
 Basics = orderfields(Basics); % orders all fields in the structure alphabetically
 
-%% TRAINING TASK SETTINGS (OBJECT TRIALS)
+%% ODDBALL TASK CONDITON (I.E. CONDITION 1) - SETTINGS
 
-% GENERAL TRAINING TASK SETTINGS
-Sets(1).set.trialName = 'oddball'; % name of the trial type
-Sets(1).set.nSeqStim = Basics.nStimCat; % length of a training sequence (i.e., number of elements)
+% In this section, all task parameters relevant for the oddball task
+% condition (i.e., condition 1) are defined.
+
+% STUDYMODE-SPECIFIC PARAMETERS:
 if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
   Sets(1).set.nSeq = 5; % number of unique category combinations / number of training trials
   Sets(1).set.sequences = datasample(perms(1:Basics.nStimCat),Sets(1).set.nSeq,'Replace',false);
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
   Sets(1).set.nSeq = factorial(Basics.nStimCat); % number of unique category combinations / number of training trials
   Sets(1).set.sequences = Shuffle(perms(1:Basics.nStimCat),2); % create a matrix with and randomly shuffle the order of all possible sequences
-end 
+end
+
+% GENERAL CONDITION PARAMETERS:
+Sets(1).set.trialName = 'oddball'; % name of the trial type
+Sets(1).set.nSeqStim = Basics.nStimCat; % length of a training sequence (i.e., number of elements)
 Sets(1).set.nTrials = Sets(1).set.nSeq * Basics.nStimCat; % total number of stimuli presentations (to have every category in every combination)
 Sets(1).set.tStim = 0.5; % duration of stimulus presentation, in seconds
 Sets(1).set.tMeanITI = 1.5; % mean inter-trial interval (ITI), in seconds
@@ -330,8 +317,13 @@ Sets(1).set.distTruncExp = truncate(Sets(1).set.distTruncExp,Sets(1).set.distLow
 Sets(1).set.ratioTarget = 0.2; % 20% of all trials are upside-down trials
 Sets(1).set.nTargetPerCat = Sets(1).set.nSeq * Sets(1).set.ratioTarget; % number of upside down trials per category
 Sets(1).set.dataIndices = transpose(reshape(1:Sets(1).set.nTrials,Sets(1).set.nSeqStim,Sets(1).set.nSeq)); % create matrix to index the response data matrix
+Sets(1).set.tTrial = Basics.tPreFixation + (Basics.tFixation + Sets(1).set.tStim + Sets(1).set.tMeanITI) * Basics.nStimCat; % duration of one training trial, in seconds
+Sets(1).set.tCond = Sets(1).set.tTrial * Sets(1).set.nSeq / 60; % duration of all training trials, in minutes
+Sets(1).set = orderfields(Sets(1).set); % orders all fields in the structure alphabetically
 
-% INDIVIDUAL TRAIN TASK SETTINGS (INDIVIDUAL FOR EVERY PARTICIPANT)
+%% ODDBALL TASK CONDITON (I.E. CONDITION 1) - CREATE DATA TABLE
+
+% CREATE INDIVIDUALIZED DATA TABLE
 Data(1).data = table; % create an empty table for the data of the training trials
 Data(1).data.id = repmat({Parameters.subjectInfo.id},Sets(1).set.nTrials,1); % add id
 Data(1).data.trial = transpose(1:Sets(1).set.nTrials); % add a trial counter
@@ -345,7 +337,7 @@ for k = 1:Basics.nStimCat % determine the (random) occurences of oddballs (equal
 end
 Data(1).data.tITI = random(Sets(1).set.distTruncExp,Sets(1).set.nTrials,1); % generate random ITIs for every trial drawn from the truncated exponential distribution
 
-% INITIALIZE EMPTY ARRAYS TO RECORD THE TASK DATA:
+% INITIALIZE EMPTY ARRAYS TO RECORD RESPONSES AND STIMULUS TIMINGS:
 Data(1).data.keyIsDown = nan(Sets(1).set.nTrials,1); % initalize empty array to save whether key was down or not for every trial
 Data(1).data.keyIndex = nan(Sets(1).set.nTrials,1); % initalize empty array to save the key indices of the keys pressed by the subject during the task
 Data(1).data.acc = nan(Sets(1).set.nTrials,1); % initalize empty array for accuracy data
@@ -356,29 +348,20 @@ Data(1).data.tFlipStim = nan(Sets(1).set.nTrials,1); % initalize empty array to 
 Data(1).data.tFlipITI = nan(Sets(1).set.nTrials,1); % initalize empty array to record flip time of ITI onset
 Data(1).data.tResponse = nan(Sets(1).set.nTrials,1); % initalize empty array to record the time of response
 
-% CALCULATE GENERAL TASK TIMINGS
-Sets(1).set.tTrial = Basics.tPreFixation + (Basics.tFixation + Sets(1).set.tStim + Sets(1).set.tMeanITI) * Basics.nStimCat; % duration of one training trial, in seconds
-Sets(1).set.tCond = Sets(1).set.tTrial * Sets(1).set.nSeq / 60; % duration of all training trials, in minutes
-Sets(1).set = orderfields(Sets(1).set); % orders all fields in the structure alphabetically
+%% SEQUENCE TASK CONDITON (I.E. CONDITION 2) - SETTINGS
 
-%% FLASH TASK SETTINGS (FLASH TRIALS)
-
-% GENERAL SETTINGS OF THE FLASH CONDITION
 Sets(2).set.trialName = 'sequence'; % name of the trial type
-if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
-  Sets(2).set.nSeq = 1; % total number of object sequences per participant
-elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
-  Sets(2).set.nSeq = 15; % total number of object sequences per participant
-end 
 Sets(2).set.nSeqStim = Basics.nStimCat; % length of an object sequence (i.e., number of elements)
 Sets(2).set.tStim = 0.1; % time of stimulus presentation, in seconds
 Sets(2).set.tISI = transpose(2.^(5:11)/1000); % ISI of flashes, in seconds (exponents of 2)
 Sets(2).set.tISI(Sets(2).set.tISI == 0.2560)  = []; % do not use ISI of 256 ms
 Sets(2).set.tISI(Sets(2).set.tISI == 1.0240)  = []; % do not use ISI of 1024 ms
 if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
+    Sets(2).set.nSeq = 1; % total number of object sequences per participant
     Sets(2).set.tISI = vertcat(min(Sets(2).set.tISI),max(Sets(2).set.tISI));
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
-end     
+    Sets(2).set.nSeq = 15; % total number of object sequences per participant
+end
 Sets(2).set.nISI = numel(Sets(2).set.tISI); % number of ISIs
 Sets(2).set.nTrials = Sets(2).set.nSeq * Sets(2).set.nISI; % total number of flash trials
 Sets(2).set.tTrial = Basics.tTargetCue + Basics.tPreFixation + Basics.tFixation + Basics.tMaxSeqTrial + Basics.tResponseLimit; % duration of one flash trial
@@ -449,11 +432,11 @@ Sets(2).set.sequences = Sets(2).set.sequences(Sets(2).set.flashSelector(:,1),:);
 % CREATE DATA TABLE:
 Data(2).data = table; % initalize table
 Data(2).data.id = repmat({Parameters.subjectInfo.id},Sets(2).set.nTrials,1); % add id
-Data(2).data.trial = transpose(1:Sets(2).set.nTrials);
+Data(2).data.trial = transpose(1:Sets(2).set.nTrials); % add a trial counter
 Data(2).data.session = nan(Sets(2).set.nTrials,1); % add a session counter
 Data(2).data.run = nan(Sets(2).set.nTrials,1); % add a run counter
-Data(2).data.stimIndex = Sets(2).set.sequences;
-Data(2).data.target = nan(Sets(2).set.nTrials,1);
+Data(2).data.stimIndex = Sets(2).set.sequences; % add sequences
+Data(2).data.target = nan(Sets(2).set.nTrials,1); % 
 Data(2).data.orient = zeros(Sets(2).set.nTrials,1);
 Data(2).data.tITI = Sets(2).set.tISI(Sets(2).set.flashSelector(:,2));
 
@@ -484,19 +467,19 @@ for j = 1:Sets(2).set.nTrials
 end
 Data(2).data.targetName = Basics.stimNames(Data(2).data.target);
 
-% SAVE DISPLAY TIMINGS
+% INITIALIZE EMPTY ARRAYS TO RECORD RESPONSES AND STIMULUS TIMINGS:
 Data(2).data.tSequence = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
 Data(2).data.tFlipCue = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
 Data(2).data.tFlipBlank = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
 Data(2).data.tFlipFix = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
 Data(2).data.tFlipStim = nan(Sets(2).set.nTrials,Sets(2).set.nSeqStim); % initalize empty array to record flip time
 Data(2).data.tFlipITI = nan(Sets(2).set.nTrials,Sets(2).set.nSeqStim); % initalize empty array to record flip time
+Data(2).data.tFlipDelay = nan(Sets(2).set.nTrials,Sets(2).set.nSeqStim); % initalize empty array to record flip time
 Data(2).data.tFlipResp = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
 Data(2).data.tResponse = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
 Sets(2).set = orderfields(Sets(2).set); % orders all fields in the structure alphabetically
 
 %% REPETITION TRIALS (SHORT) - SETTINGS
-
 % SET CONDITION PARAMETERS:
 Sets(3).set.trialName = 'repetition (short)'; % name of the trial type
 Sets(3).set.nSeq = 8; % total number of sequences
@@ -524,6 +507,7 @@ for x = 1:Sets(3).set.nRep
     Sets(3).set.sequences = vertcat(Sets(3).set.sequences,oneTwoSequence);
 end
 Sets(3).set.sequences = Shuffle(Sets(3).set.sequences,2); % randomly shuffle all sequences
+Sets(3).set = orderfields(Sets(3).set); % orders all fields in the structure alphabetically
 
 % CREATE DATA FRAME
 Data(3).data = table; % initalize empty table
@@ -565,6 +549,7 @@ Data(3).data.tFlipITI = nan(Sets(3).set.nTrials,Sets(3).set.nSeqStim); % initali
 Data(3).data.tFlipResp = nan(Sets(3).set.nTrials,1); % initalize empty array to record flip time
 Data(3).data.tResponse = nan(Sets(3).set.nTrials,1); % initalize empty array to record flip time
 
+
 %% REPETITION TRIALS (LONG) - SETTINGS
 
 Sets(4).set.trialName = 'repetition (long)'; % name of the trial type
@@ -584,11 +569,12 @@ while any(Sets(4).set.sequences(:,end) == Sets(4).set.sequences(:,end-1)) % whil
     Sets(4).set.sequences(:,end) = transpose(randperm(Basics.nStimCat)); % ... change the last elements of rows randomly
 end
 Sets(4).set.sequences = Shuffle(Sets(4).set.sequences,2); % randomly shuffle all sequences
+Sets(4).set = orderfields(Sets(4).set); % orders all fields in the structure alphabetically
 
 % CREATE DATA TABLE
 Data(4).data = table; % initalize data table
 dataOneTwo.id = repmat({Parameters.subjectInfo.id},Sets(4).set.nTrials,1); % add id
-Data(4).data.trial = transpose(1:Sets(4).set.nTrials);
+Data(4).data.trial = transpose(1:Sets(4).set.nTrials); % add a trial counter
 Data(4).data.session = nan(Sets(4).set.nTrials,1); % add a session counter
 Data(4).data.run = nan(Sets(4).set.nTrials,1); % add a run counter
 Data(4).data.stimIndex = Sets(4).set.sequences;
@@ -603,9 +589,6 @@ Data(4).data.targetPos = repmat(Sets(4).set.nSeqStim,Sets(4).set.nTrials,1);
 Data(4).data.targetPosAlt = Data(4).data.targetPos-transpose(randsample(Sets(3).set.respDiff-1:Sets(3).set.respDiff + 1,5,true));
 Data(4).data.targetName = Basics.stimNames(Data(4).data.target); % get target names
 Data(4).data.tITI = repmat(Sets(4).set.tISI,Sets(4).set.nTrials,1); % set ISIs for all trials
-Data(4).data.tSequence = nan(Sets(4).set.nTrials,1);
-
-% INITALIZE EMPTY ARRAYS TO SAVE THE TASK TIMINGS (STIMULUS DISPLAY, ETC.)
 Data(4).data.tSequence = nan(Sets(4).set.nTrials,1); % initalize empty array to record flip time
 Data(4).data.tFlipCue = nan(Sets(4).set.nTrials,1); % initalize empty array to record flip time
 Data(4).data.tFlipBlank = nan(Sets(4).set.nTrials,1); % initalize empty array to record flip time
@@ -614,41 +597,5 @@ Data(4).data.tFlipStim = nan(Sets(4).set.nTrials,Sets(4).set.nSeqStim); % inital
 Data(4).data.tFlipITI = nan(Sets(4).set.nTrials,Sets(4).set.nSeqStim); % initalize empty array to record flip time
 Data(4).data.tFlipResp = nan(Sets(4).set.nTrials,1); % initalize empty array to record flip time
 Data(4).data.tResponse = nan(Sets(4).set.nTrials,1); % initalize empty array to record the time of response
-
-% ORDER STRUCTURE FIELDS:
-Sets(3).set = orderfields(Sets(3).set); % orders all fields in the structure alphabetically
-Sets(4).set = orderfields(Sets(4).set); % orders all fields in the structure alphabetically
-
-%%
-
-if ~strcmp(Parameters.studyMode,'instructions') && ~strcmp(Parameters.studyMode,'practice')
-    
-    % CALCULATE TOTAL DURATION OF THE EXPERIMENT AND SET BREAKS ACCORDINGLY
-    Basics.tExperiment = Sets(1).set.tCond + Sets(2).set.tCond + Sets(3).set.tCond + Sets(4).set.tCond; % duration of all trials (training + flash) of the experiment, in minutes
-    Basics.intBreak = 10; % break interval: one break every 10 minutes
-    Basics.nBreak = ceil(Basics.tExperiment/Basics.intBreak); % total number of breaks in the experiment
-    Basics.rewardMax = Basics.reward * (Sets(1).set.nTrials * Sets(1).set.ratioTarget + Sets(2).set.nTrials + Sets(3).set.nTrials + Sets(4).set.nTrials); % calculate maximum reward
-    
-    % CREATE A SHUFFLED ORDER OF ALL SEQUENCE TRIALS
-    Basics.allSeqTrials = [repmat(idxFlash,Sets(2).set.nTrials,1);repmat(idxOneTwo,Sets(3).set.nTrials,1);repmat(idxOneTwoExtra,Sets(4).set.nTrials,1)]; % create array with all sequence trials
-    Basics.allSeqTrials = Shuffle(Basics.allSeqTrials); % shuffle all sequence trials
-    
-    %  CREATE THE TRIAL SEQUENCE, WITH TRAINING AND SEQUENCE TRIALS INTERLEAVED
-    Basics.trialStructure = [ones(length(Basics.allSeqTrials),1),Basics.allSeqTrials]; % create trial structure as matrix
-    Basics.trialStructure = reshape(transpose(Basics.trialStructure),[numel(Basics.trialStructure),1]);
-
-    % DETERMINE TIMEPOINTS FOR BREAKS
-    % Breaks should occur approximately every 10 mins.
-    % Break trials should be uneven as the first trial after a break should be a train trial
-    Basics.nTrialsRun = length(Basics.trialStructure)/Basics.nBreak;
-    Basics.nTrialsSession = length(Basics.trialStructure)/Basics.nSession;
-    Basics.breakTrials = 1:Basics.nTrialsRun:length(Basics.trialStructure); % compute break trials
-    Basics.nRunAll = numel(Basics.breakTrials); % get the maximum number of task block
-    Basics.nRunSession = Basics.nRunAll/Basics.nSession; % get the maximum number of task block
-    Basics.breakTrials = reshape(Basics.breakTrials,Basics.nRunSession,Basics.nSession);
-    
-end
-
-Basics = orderfields(Basics); % orders all fields in the structure alphabetically
 
 end

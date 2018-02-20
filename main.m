@@ -1,16 +1,13 @@
 %% MAIN OF THE VISUAL OBJECT SEQUENCE TASK
 function [Sets,Data,Basics,Parameters] = main(Sets,Data,Basics,Parameters,Sounds)
 
-% GET START TIME:
-tStart = tic; % get start time 
-
 % DEFINE CONDITION INDICES
 idxTrain = 1;
 idxFlash = 2;
 idxOneTwo = 3;
 idxOneTwoExtra = 4;
 
-% PSYCHTOOLBOX SETTINGS:
+% PSYCHTOOLBOX SETTINGS
 Screen('Preference','SkipSyncTests',1); % for maximum accuracy and reliability
 Screen('Preference','VisualDebugLevel',3);
 Screen('Preference','SuppressAllWarnings',1);
@@ -25,7 +22,7 @@ Priority(MaxPriority(Parameters.window)); % raise Matlab to realtime-priority mo
 Screen('TextFont', Parameters.window, Parameters.textFont); % select specific text font
 Screen('TextSize', Parameters.window, Parameters.textSize); % select specific text size
 HideCursor(); % hides the cursor
-% ListenChar(2); % suppress echo to the command line for keypresses
+ListenChar(2); % suppress echo to the command line for keypresses
 KbName('UnifyKeyNames'); % used for cross-platform compatibility of keynaming
 RestrictKeysForKbCheck([KbName('LeftArrow'),KbName('RightArrow')]); % restrict keys for KbCheck
 Parameters.flipInterval = Screen('GetFlipInterval', Parameters.window); % get the monitor flip interval
@@ -34,24 +31,25 @@ Parameters.flipInterval = Screen('GetFlipInterval', Parameters.window); % get th
 DrawFormattedText(Parameters.window,'Willkommen zur Aufgabe "Visuelle Objekte Erkennen"!','center','center',Parameters.textColorBlack);
 DrawFormattedText(Parameters.window, 'Start mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
 Screen('Flip',Parameters.window); % flip to the screen
-VBLTime = KbPressWait(Parameters.device); % save key press time
-waitSecs = 0; % define wait time
+tStart = KbPressWait(Parameters.device); % save key press time
+waitSecs = 0; % define stimulus duration
 
 % START THE RESPONSE QUEUE
 KbQueueCreate(Parameters.device,Parameters.keyList); % creates queue, restricted to the relevant key targets
 KbQueueStart(Parameters.device); % starts queue
 
-for run = Parameters.subjectInfo.run : Basics.nRunSession
+% MAIN TASK LOOP
+for run = Parameters.subjectInfo.run:Basics.nRunSession
     
     fprintf('Starting run %d of %d.\n',run,Basics.nRunSession) % display task progress
     
     trialStart = Basics.breakTrials(run,Parameters.subjectInfo.session);
-    trialStop = Basics.breakTrials(run,Parameters.subjectInfo.session) + Basics.nTrialsRun - 1;
+    trialStop = trialStart + Basics.nTrialsRun - 1;
     
     for trial = trialStart:trialStop
         
         % DEFINE THE CURRENT TASK CONDITION:
-        cond = Basics.trialStructure(trial); % get the current condition (i.e., train, flash, etc.)
+        cond = Basics.trialStructure(trial); % get the current condition (i.e., oddball, sequence or repetition trial)
         
         % DISPLAY THE TASK PROGRESS IN THE COMMAND WINDOW:
         fprintf('Starting trial %d of %d (total trials).\n',trial,length(Basics.trialStructure)) % display task progress
@@ -112,7 +110,7 @@ for run = Parameters.subjectInfo.run : Basics.nRunSession
             clear theImage % clear the image to save working power
             
             % CREATE AUDITORY FEEDBACK ANY TIME (TRAINING TRIALS ONLY)
-            if ismember(cond,idxTrain) % check if current trial is a training trial
+            if ismember(cond,idxTrain) % check if current trial is an oddball trial
                 
                 Data(cond).data.tFlipStim(dataIndex) = VBLTime; % save flip time
                 KbQueueFlush(Parameters.device,1); % clear the response queue (only relevant for training trials)
@@ -177,15 +175,16 @@ for run = Parameters.subjectInfo.run : Basics.nRunSession
             end
         end
         
-        % FURTHER PROCEDURE FOR SEQUENCE TRIALS AFTER STIMULUS LOOP:
-        if ismember(cond,[idxFlash idxOneTwo idxOneTwoExtra]) % only on sequence trials
+        % FURTHER PROCEDURE FOR SEQUENCE AND REPETITION TRIALS AFTER STIMULUS LOOP:
+        if ismember(cond,[idxFlash idxOneTwo idxOneTwoExtra]) % only for sequence and repetition trials
             
             % WAITING PERIOD AFTER LAST STIMULUS (WAIT UNTIL 16s HAVE ELAPSED)
             DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
             Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
-            Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
+            VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
+            Data(cond).data.tFlipDelay = VBLTime; % save flip time
             waitSecs = Basics.tMaxSeqTrial; % define wait time
-            resume(Sounds.soundWaitPlayer); % start to play sound during waiting period
+            resume(Sounds.soundWaitPlayer); % start to play sound during the delay period
             
             % SHOW RESPONSE OPTIONS
             DrawFormattedText(Parameters.window,Data(cond).data.targetName{dataIndex},'center','center',Parameters.textColorBlack); % draw text to screen
@@ -243,7 +242,7 @@ for run = Parameters.subjectInfo.run : Basics.nRunSession
         
     end
     
-    % END OF RUN: TAKE A BREAK
+    % END OF RUN: TIME FOR A BREAK
     if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
         DrawFormattedText(Parameters.window,'Pause','center',Parameters.textSize * 2,Parameters.textColorBlack);
         DrawFormattedText(Parameters.window,sprintf('Sie haben Durchgang %d von %d geschafft.',run,Basics.nRunSession),'center',Parameters.textSize * 3,Parameters.textColorBlack);
@@ -257,11 +256,12 @@ for run = Parameters.subjectInfo.run : Basics.nRunSession
     end
     
     % SAVE THE DATA OF THE CURRENT RUN
-    save(fullfile(Parameters.pathData,['highspeedMRI_',...
-        Parameters.studyMode,'_sub',...
-        Parameters.subjectInfo.id,'_sess',num2str(Parameters.subjectInfo.session),...
-        '_run',num2str(run),'.mat']),...
-        'Sets','Data','Basics','Parameters');
+    fileName = [strjoin({...
+        Parameters.nameStudy,Parameters.studyMode,...
+        'sub',num2str(Parameters.subjectInfo.id),...
+        'session',num2str(Parameters.subjectInfo.session),...
+        'run',num2str(Parameters.subjectInfo.run)},'_'),'.mat']; % define file name
+    save(fullfile(Parameters.pathData,fileName),'Sets','Data','Basics','Parameters'); % save data
     
     % CONTINUE WITH NEXT RUN
     if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
@@ -272,6 +272,7 @@ for run = Parameters.subjectInfo.run : Basics.nRunSession
     
 end
 
+% STOP SOUND AND RESPONSE QUEUE:
 stop(Sounds.soundWaitPlayer); % stop to play sound
 KbQueueStop(Parameters.device); % stop the response queue
 
@@ -292,7 +293,7 @@ fprintf('Total reward: %.2f Euro\n',Basics.totalWinAll); % display current task 
 
 % END OF THE EXPERIMENT:
 ShowCursor(); % show the cursor
-% ListenChar(1); % re-enable echo to the command line for key presses
+ListenChar(1); % re-enable echo to the command line for key presses
 Screen('CloseAll'); % close screen
 KbQueueRelease(Parameters.device) % release the keyboard queue
 RestrictKeysForKbCheck; % reset the keyboard input checking for all keys
