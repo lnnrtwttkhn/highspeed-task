@@ -31,12 +31,12 @@ Parameters.flipInterval = Screen('GetFlipInterval', Parameters.window); % get th
 DrawFormattedText(Parameters.window,'Willkommen zur Aufgabe "Visuelle Objekte Erkennen"!','center','center',Parameters.textColorBlack);
 DrawFormattedText(Parameters.window, 'Start mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
 Screen('Flip',Parameters.window); % flip to the screen
-tStart = KbPressWait(Parameters.device); % save key press time
+tStart = KbPressWait(Parameters.deviceID); % save key press time
 waitSecs = 0; % define stimulus duration
 
 % START THE RESPONSE QUEUE
-KbQueueCreate(Parameters.device,Parameters.keyList); % creates queue, restricted to the relevant key targets
-KbQueueStart(Parameters.device); % starts queue
+KbQueueCreate(Parameters.deviceID,Parameters.keyList); % creates queue, restricted to the relevant key targets
+KbQueueStart(Parameters.deviceID); % starts queue
 
 % MAIN TASK LOOP
 for run = Parameters.subjectInfo.run:Basics.nRunSession
@@ -113,7 +113,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
             if ismember(cond,idxTrain) % check if current trial is an oddball trial
                 
                 Data(cond).data.tFlipStim(dataIndex) = VBLTime; % save flip time
-                KbQueueFlush(Parameters.device,1); % clear the response queue (only relevant for training trials)
+                KbQueueFlush(Parameters.deviceID,1); % clear the response queue (only relevant for training trials)
                 
                 % COLLECT RESPONSES FROM STIMULUS ONSET TO END OF ISI (NO BREAK)
                 while isnan(Data(cond).data.tFlipITI(dataIndex)) || isnan(Data(cond).data.acc(dataIndex))
@@ -130,7 +130,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
                     if GetSecs - Data(cond).data.tFlipStim(dataIndex) < Basics.tResponseLimit
                         % AS LONG AS NO RESPONSE HAS BEEN MADE, CHECK KEYBOARD
                         if isnan(Data(cond).data.keyIsDown(dataIndex)) || Data(cond).data.keyIsDown(dataIndex) == 0
-                            [Data(cond).data.keyIsDown(dataIndex), firstKeyPressTimes] = KbQueueCheck(Parameters.device); %  check if any key was pressed during the previous time period (i.e., since keyboard was flushed)
+                            [Data(cond).data.keyIsDown(dataIndex), firstKeyPressTimes] = KbQueueCheck(Parameters.deviceID); %  check if any key was pressed during the previous time period (i.e., since keyboard was flushed)
                             % IF THE PARTICIPANT PRESSED A KEY
                             if Data(cond).data.keyIsDown(dataIndex) == 1 % participant responded
                                 % CHECK WHICH KEY WAS PRESSED AND GET RT
@@ -204,9 +204,9 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
             waitSecs = Basics.tResponseLimit; % define wait time
             
             % COLLECT RESPONSE AND BREAK IF RESPONSE WAS MADE
-            KbQueueFlush(Parameters.device,1); % clear the response queue
+            KbQueueFlush(Parameters.deviceID,1); % clear the response queue
             while GetSecs < (VBLTime + Basics.tResponseLimit) && (isnan(Data(cond).data.keyIsDown(dataIndex))) || Data(cond).data.keyIsDown(dataIndex) == 0
-                [Data(cond).data.keyIsDown(dataIndex), firstKeyPressTimes] = KbQueueCheck(Parameters.device); %  check if any key was pressed during the previous time period
+                [Data(cond).data.keyIsDown(dataIndex), firstKeyPressTimes] = KbQueueCheck(Parameters.deviceID); %  check if any key was pressed during the previous time period
                 if Data(cond).data.keyIsDown(dataIndex) == 1 || GetSecs > (VBLTime + Basics.tResponseLimit) % participant responded or response time has elapsed
                     break
                 end
@@ -257,7 +257,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
     
     % SAVE THE DATA OF THE CURRENT RUN
     fileName = [strjoin({...
-        Parameters.nameStudy,Parameters.studyMode,...
+        Parameters.studyName,Parameters.studyMode,...
         'sub',num2str(Parameters.subjectInfo.id),...
         'session',num2str(Parameters.subjectInfo.session),...
         'run',num2str(Parameters.subjectInfo.run)},'_'),'.mat']; % define file name
@@ -266,7 +266,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
     % CONTINUE WITH NEXT RUN
     if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
         fprintf('Data saved.\n'); % display current task status
-        VBLTime = KbPressWait(Parameters.device); % save key press time
+        VBLTime = KbPressWait(Parameters.deviceID); % save key press time
         waitSecs = 0; % define wait time
     end
     
@@ -274,7 +274,7 @@ end
 
 % STOP SOUND AND RESPONSE QUEUE:
 stop(Sounds.soundWaitPlayer); % stop to play sound
-KbQueueStop(Parameters.device); % stop the response queue
+KbQueueStop(Parameters.deviceID); % stop the response queue
 
 % END OF THE TASK:
 DrawFormattedText(Parameters.window,'Ende der Aufgabe','center',Parameters.textSize * 2,Parameters.textColorBlack);
@@ -295,7 +295,7 @@ fprintf('Total reward: %.2f Euro\n',Basics.totalWinAll); % display current task 
 ShowCursor(); % show the cursor
 ListenChar(1); % re-enable echo to the command line for key presses
 Screen('CloseAll'); % close screen
-KbQueueRelease(Parameters.device) % release the keyboard queue
+KbQueueRelease(Parameters.deviceID) % release the keyboard queue
 RestrictKeysForKbCheck; % reset the keyboard input checking for all keys
 Priority(0); % disable realtime mode
 Screen('Preference','SkipSyncTests',0);

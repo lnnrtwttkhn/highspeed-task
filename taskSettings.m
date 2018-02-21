@@ -1,29 +1,28 @@
 function [Sets,Data,Basics,Parameters,Sounds] = taskSettings
 %% HIGHSPEED MRI TASK
-% Aim: Decoding fast neural sequences of visual objects
-% M.Sc. Lennart Wittkuhn | Independent Max Planck Research Group NeuroCode
+% Lennart Wittkuhn | Independent Max Planck Research Group NeuroCode
 % Max Planck Institute for Human Development, Berlin, Germany
 % Contact: wittkuhn@mpib-berlin.mpg.de
 % 2017 - 2018
 
-%% DEFINE ALL TASK INDEPENDENT PARAMETERS:
+%% DEFINE EXPERIMENTAL PARAMETERS:
 
 % DEFINE THE BASELOCATION DEPENDING ON THE PLATFORM:
 if ismac
-    Parameters.baseLocation = '~'; % base location for Mac
+    Parameters.pathBase = '~'; % base location for Mac
 elseif ispc
-    Parameters.baseLocation = '/'; % base location for Windows
+    Parameters.pathBase = '/'; % base location for Windows
 end
 
 % GET COMPUTER DETAILS
-Parameters.nameComputer = computer; % save information about computer
-Parameters.nameHost = char(getHostName(java.net.InetAddress.getLocalHost));
-Parameters.nameOS = OSName; % save information about operating system
-Parameters.nameMatlabVersion = ['R' version('-release')]; % save information about operating systemversion('-release')
+Parameters.computerName = computer; % save information about computer
+Parameters.computerHost = char(getHostName(java.net.InetAddress.getLocalHost));
+Parameters.computerOS = OSName; % save information about operating system
+Parameters.computerMatlab = ['R' version('-release')]; % save information about operating systemversion('-release')
 
 % SET ALL NECESSARY TASK PATHS AND GET SYSTEM INFORMATION
-Parameters.nameStudy = 'highspeed_task';
-Parameters.pathTask = fullfile(Parameters.baseLocation,'Seafile',Parameters.nameStudy); % path to the task folder
+Parameters.studyName = 'highspeed_task';
+Parameters.pathTask = fullfile(Parameters.pathBase,'Seafile',Parameters.studyName); % path to the task folder
 Parameters.pathScripts = fullfile(Parameters.pathTask,'scripts'); % path to the task script folder
 Parameters.pathPlots = fullfile(Parameters.pathTask,'plots'); % path to the task plot folder
 Parameters.pathStimuli = fullfile(Parameters.pathTask,'stimuli'); % path to the task stimuli folder
@@ -32,7 +31,7 @@ Parameters.pathData = fullfile(Parameters.pathTask,'data'); % path to the task d
 cd(Parameters.pathScripts) % set the current directory to the script folder
 
 % RUN KBQUEUE COMMANDS ONCE, TO AVOID CONFLICT WITH GETCHAR
-KbQueueCreate; % initalize cue
+KbQueueCreate; % initalize response queue
 KbQueueStop; % stop queue
 
 % DUMMY CALLS TO PSYCHTOOLBOX FUNCTIONS:
@@ -74,18 +73,18 @@ Parameters.screenPosRight = Parameters.screenCenterX + Parameters.screenCenterX 
 [Parameters.deviceKeyNames,Parameters.deviceNames] = GetKeyboardIndices; % get a list of all devices connected
 if ismac
     Parameters.deviceString = 'Apple Internal Keyboard / Trackpad'; % name of the scanner trigger box
-    Parameters.device = 0;
+    Parameters.deviceID = 0;
     for k = 1:length(Parameters.deviceNames) % for each possible device
         if strcmp(Parameters.deviceNames{k},Parameters.deviceString) % compare the name to the name you want
-            Parameters.device = Parameters.deviceKeyNames(k); % grab the correct id, and exit loop
+            Parameters.deviceID = Parameters.deviceKeyNames(k); % grab the correct id, and exit loop
             break;
         end
     end
-    if Parameters.device == 0 %%error checking
+    if Parameters.deviceID == 0 %%error checking
         error('No device by that name was detected');
     end
 elseif ispc
-  Parameters.device =  Parameters.deviceKeyNames; 
+  Parameters.deviceID =  Parameters.deviceKeyNames; 
 end
 clear k % clear unneccessary variable
 
@@ -101,59 +100,47 @@ while true
     Parameters.studyMode = str{selection}; % save selection of the study mode
     
     % ENTER PARTICIPANT DETAILS:
-    prompt = {'id','age','gender','session','run'}; % define the prompts
-    dlgTitle = 'Subject Info'; % define the dialog box title
-    numLines = 1; % define the number of response lines
-    defaultAns = {'99999','99999','m/f','1/2','1'}; % define the default answers
-    Parameters.subjectInfo = inputdlg(prompt,dlgTitle,numLines,defaultAns); % create and show dialog box
-    if isempty(Parameters.subjectInfo)
-        f = msgbox('Process aborted: Please start again!','Error','error');
+    prompt = {'id','age','gender','session','run','cbal'}; % define the prompts
+    defaultAns = {'99999','99999','m/f','1/2','1','99999'}; % define the default answers
+    Parameters.subjectInfo = inputdlg(prompt,'Subject Info',1,defaultAns); % create and show dialog box
+    if isempty(Parameters.subjectInfo) % if cancel was pressed
+        f = msgbox('Process aborted: Please start again!','Error','error'); % show error message
         uiwait(f);
         continue
-    end
-    
-    Parameters.subjectInfo = cell2struct(Parameters.subjectInfo,prompt,1); % turn into structure array
-    
-    % IF PRACTICE, DEFINE CONDITION MODE:
-    if strcmp(Parameters.studyMode,'instructions')
-        str = {'condition 1','condition 2'}; % study mode options
-        [selection,~] = listdlg('PromptString','Please choose the instructions mode:',...
-            'SelectionMode','single','ListString',str,'Name','Practice mode','ListSize',[160,70]);
-        Parameters.instructionsMode = str{selection}; % save selection of the study mode
     else
-        Parameters.instructionsMode = 'non';
+        Parameters.subjectInfo = cell2struct(Parameters.subjectInfo,prompt,1); % turn into structure array
     end
     
-    % CHECK INPUT DETAILS:
+    % CHECK INPUTS (INTERNALLY):
     if numel(Parameters.subjectInfo.id) ~= 5 % if ID has not been correctly specified
         f = msgbox('ID must contain 5 digits!','Error','error');
         uiwait(f);
-    elseif ~strcmp(Parameters.subjectInfo.gender,'m') && ~strcmp(Parameters.subjectInfo.gender,'f') % if ID has not been correctly specified
+    elseif ~strcmp(Parameters.subjectInfo.gender,'m') && ~strcmp(Parameters.subjectInfo.gender,'f')
         f = msgbox('Gender must be either m or f','Error','error');
         uiwait(f);
-    elseif str2double(Parameters.subjectInfo.session) ~= 1 && str2double(Parameters.subjectInfo.session) ~= 2 % if ID has not been correctly specified
+    elseif str2double(Parameters.subjectInfo.session) ~= 1 && str2double(Parameters.subjectInfo.session) ~= 2
         f = msgbox('Session must be either 1 or 2','Error','error');
         uiwait(f);
-    elseif ~ismember(str2double(Parameters.subjectInfo.run),1:8) % if ID has not been correctly specified
+    elseif ~ismember(str2double(Parameters.subjectInfo.run),1:8)
         f = msgbox('Run number is not valid!','Error','error');
         uiwait(f);
     else
-        % CHECK INPUT ONCE MORE:
+        
+        % CHECK INPUTS (EXTERNALLY):
         choice = questdlg([{'Would you like to continue with this setup?'};...
             {''};...
             strcat('study mode',{': '},Parameters.studyMode);...
-            strcat('instructions mode',{': '},Parameters.instructionsMode);...
             strcat(transpose(prompt),{': '},struct2cell(Parameters.subjectInfo))], ...
             'Continue?', ...
             'Cancel','OK','OK');
         
         % END LOOP IF ALL DETAILS ARE CORRECT:
         if strcmp(choice,'OK')
-            disp(['Selected study mode: ',Parameters.studyMode]);
-            disp(['Selected instructions mode: ',Parameters.instructionsMode]);
+            fprintf(1,['Selected study mode: ',Parameters.studyMode,'\n']);
             Parameters.subjectInfo.age = str2double(Parameters.subjectInfo.age); % turn into double
             Parameters.subjectInfo.session = str2double(Parameters.subjectInfo.session); % turn into double
             Parameters.subjectInfo.run = str2double(Parameters.subjectInfo.run); % turn into double
+            Parameters.subjectInfo.cbal = str2double(Parameters.subjectInfo.cbal); % turn into double
             break
         else
             f = msgbox('Process aborted: Please start again!','Error','error');
@@ -164,87 +151,89 @@ end
 
 %%
 
-Parameters.subjectFolder = strjoin({Parameters.nameStudy,'sub',Parameters.subjectInfo.id},'_'); % create name of subject data folder
-Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFolder)); % get list of files in data directory
-Parameters.dirDataSub = {Parameters.dirDataSub.name}; % get cell array of files names in data directory
-
-Parameters.subjectFile = strjoin({Parameters.subjectFolder,Parameters.studyMode,...
-    'session',num2str(Parameters.subjectInfo.session),...
-    'run',num2str(Parameters.subjectInfo.run)},'_');
-
-
-any(contains(Parameters.dirData,pattern))
-
-
-% CHECK IF SUBJECT FOLDER ALREADY EXISTS
-
-% IF DATA FOLDER IS FOUND, CHECK THE DATA FILES INSIDE THE FOLDER:
-if any(contains(Parameters.dirData,Parameters.subjectFile))
-    % DATA FILES IN SUB FOLDER
-    fprintf('Loading previous subject folder: %s\n',Parameters.subjectFile);
-    Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFile));
-    Parameters.dirDataSub = {Parameters.dirDataSub.name}; % get cell array of files names in data directory
-    Parameters.subjectFile = strjoin({Parameters.subjectFile,Parameters.studyMode},'_');
-    if any(contains(Parameters.dirDataSub,Parameters.subjectFile))
-        fprintf('Loading previous study mode: %s\n',Parameters.subjectFile);
-        
-    
-        
-    end
-    find(contains(Parameters.dirDataSub,Parameters.nameStudy))
-    
-    strjoin({Parameters.subjectFolder,Parameters.studyMode},'_')
-    
-    
-    % GET HIGHEST SESSION:
-    dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
-    maxSession = cellfun(@str2double,regexp(Parameters.dirDataSub,'(?<=sess)-*\d+','match'),'UniformOutput',false); % find the run numbers of the previous session
-    [sess,~] = max(maxSession); % get the index of the last run of the last session
-    
-    % GET HIGHEST RUN:
-    pattern = ['highspeedMRI_',Parameters.studyMode,'_sub',Parameters.subjectInfo.id,'_sess',num2str(sess)]; % check study mode and id
-    idx = startsWith(Parameters.dataFiles,pattern); % now find all the files of the subject of the previous session
-    dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
-    maxRun = cellfun(@str2double,regexp(dataMatch,'(?<=run)-*\d+','match')); % find the run numbers of the previous session
-    [run,~] = max(maxRun); % get the index of the last run of the last session
-    
-    % LOAD DATA FILE:
-    pattern = ['highspeedMRI_',Parameters.studyMode,'_sub',Parameters.subjectInfo.id,'_sess',num2str(sess),'_run',num2str(run)]; % check study mode and id
-    load(fullfile(Parameters.pathData,pattern),'Data','Sets','Basics') % load the previous data file
-    fprintf('Loading previous data: %s\n',pattern) % display task progress
-    
-    
-    
-    
-    
-    
-elseif isempty(Parameters.dataFolderIndex)
-    mkdir(Parameters.pathData,Parameters.dataFolder); % create a new data directory for the current subject
-end
-
-
-
+% Parameters.subjectFolder = strjoin({Parameters.studyName,'sub',Parameters.subjectInfo.id},'_'); % create name of subject data folder
+% Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFolder)); % get list of files in data directory
+% Parameters.dirDataSub = {Parameters.dirDataSub.name}; % get cell array of files names in data directory
+% 
+% Parameters.subjectFile = strjoin({Parameters.subjectFolder,Parameters.studyMode,...
+%     'session',num2str(Parameters.subjectInfo.session),...
+%     'run',num2str(Parameters.subjectInfo.run)},'_');
+% 
+% 
+% any(contains(Parameters.dirData,pattern))
+% 
+% 
+% % CHECK IF SUBJECT FOLDER ALREADY EXISTS
+% 
+% % IF DATA FOLDER IS FOUND, CHECK THE DATA FILES INSIDE THE FOLDER:
+% if any(contains(Parameters.dirData,Parameters.subjectFile))
+%     % DATA FILES IN SUB FOLDER
+%     fprintf('Loading previous subject folder: %s\n',Parameters.subjectFile);
+%     Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFile));
+%     Parameters.dirDataSub = {Parameters.dirDataSub.name}; % get cell array of files names in data directory
+%     Parameters.subjectFile = strjoin({Parameters.subjectFile,Parameters.studyMode},'_');
+%     if any(contains(Parameters.dirDataSub,Parameters.subjectFile))
+%         fprintf('Loading previous study mode: %s\n',Parameters.subjectFile);
+%         
+%     
+%         
+%     end
+%     find(contains(Parameters.dirDataSub,Parameters.studyName))
+%     
+%     strjoin({Parameters.subjectFolder,Parameters.studyMode},'_')
+%     
+%     
+%     % GET HIGHEST SESSION:
+%     dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
+%     maxSession = cellfun(@str2double,regexp(Parameters.dirDataSub,'(?<=sess)-*\d+','match'),'UniformOutput',false); % find the run numbers of the previous session
+%     [sess,~] = max(maxSession); % get the index of the last run of the last session
+%     
+%     % GET HIGHEST RUN:
+%     pattern = ['highspeedMRI_',Parameters.studyMode,'_sub',Parameters.subjectInfo.id,'_sess',num2str(sess)]; % check study mode and id
+%     idx = startsWith(Parameters.dataFiles,pattern); % now find all the files of the subject of the previous session
+%     dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
+%     maxRun = cellfun(@str2double,regexp(dataMatch,'(?<=run)-*\d+','match')); % find the run numbers of the previous session
+%     [run,~] = max(maxRun); % get the index of the last run of the last session
+%     
+%     % LOAD DATA FILE:
+%     pattern = ['highspeedMRI_',Parameters.studyMode,'_sub',Parameters.subjectInfo.id,'_sess',num2str(sess),'_run',num2str(run)]; % check study mode and id
+%     load(fullfile(Parameters.pathData,pattern),'Data','Sets','Basics') % load the previous data file
+%     fprintf('Loading previous data: %s\n',pattern) % display task progress
+%     
+%     
+%     
+%     
+%     
+%     
+% elseif isempty(Parameters.dataFolderIndex)
+%     mkdir(Parameters.pathData,Parameters.dataFolder); % create a new data directory for the current subject
+% end
+% 
 
 
-%%
 
+
+%% TASK BASICS
+
+% INDICES FOR THE DIFFERENT TASK CONDITIONS
+indexOddball = 1;
 idxFlash = 2;
 idxOneTwo = 3;
 idxOneTwoExtra = 4;
 
 % DEFINE TOTAL NUMBER OF RUNS AND SESSIONS
-if strcmp(Parameters.studyMode,'mri') 
-    Basics.nSession = 2;
-    Basics.nRun = 8;
+if contains(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
+    Basics.nSession = 1; % total number of sessions
+    Basics.nRun = 1; % total number of runs
 elseif strcmp(Parameters.studyMode,'behavioral')
-    Basics.nSession = 1;
-    Basics.nRun = 8;
-elseif strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
-    Basics.nSession = 1;
-    Basics.nRun = 1;
+    Basics.nSession = 1; % total number of sessions
+    Basics.nRun = 8; % total number of runs
+elseif strcmp(Parameters.studyMode,'mri')
+    Basics.nSession = 2; % total number of sessions
+    Basics.nRun = 8; % total number of runs
 end
 
-% DEFINE THE TRIAL STRUCTURE
+% DEFINE TRIAL STRUCTURE
 if strcmp(Parameters.studyMode,'instructions_condition_1')
     Basics.trialStructure = ones(5,1);
 elseif strcmp(Parameters.studyMode,'instructions_condition_2')
@@ -267,22 +256,15 @@ Basics.nTrialsSession = Basics.nTrials/Basics.nSession; % number of trials per s
 Basics.nRunSession = Basics.nRun/Basics.nSession; % number of runs per session
 Basics.breakTrials = reshape(1:Basics.nTrialsRun:Basics.nTrials,Basics.nRunSession,Basics.nSession); % define break trials
 
-%% TASK BASICS
-% In this section, variables are defined that are relevant for all task
-% conditions. They are the same for all task conditions.
-% Basics.dirStim = dir(Parameters.pathStimuli); % get info from stimulus files directory
-% Basics.dirStim = Basics.dirStim(~ismember({Basics.dirStim.name},{'.','..','.DS_Store','.Rhistory'})); % get rid of '.', '..' and '.DS_Store' in d.name
-% Basics.stimNames = transpose({Basics.dirStim.name}); % list all stimuli names (including the .jpg extension)
-% Basics.stimNames = regexprep(Basics.stimNames,'.jpg',''); % get rid of the .jpg extension
-Basics.stimNames = transpose({'Gesicht','Haus','Katze','Schuh','Stuhl'}); % list all stimuli names
+% GENERAL TASK PARAMETERS
+Basics.stimNames = transpose({'Gesicht','Haus','Katze','Schuh','Stuhl'}); % list of all stimulus names
 Basics.nStimCat = numel(Basics.stimNames); % number of stimulus categories
-Basics.stimOrient = [0 180]; % define stimulus orientations (0 = upright; 180 = upside-down)
 Basics.reward = 0.03; % reward in cents for each correct response
 Basics.tFixation = 0.150; % duration of fixation, in seconds
-Basics.tPreFixation = 4; % duration of blank screen before fixation cross, in seconds
+Basics.tPreFixation = 4; % duration of blank screen before fixation, in seconds
 Basics.tTargetCue = 0.5; % duration of target cue presentation, in seconds
-Basics.tMaxSeqTrial = 16; % fixed trial duration, in seconds
-Basics.tResponseLimit = 1.5; % response time limit
+Basics.tMaxSeqTrial = 16; % duration of one sequence trial, in seconds
+Basics.tResponseLimit = 1.5; % response time limit, in seconds
 for i = 1:Basics.nStimCat % preload the task stimuli (pictures)
     currentStimulusName = Basics.stimNames{i}; % get the current stimulus name
     theImageLocation = fullfile(Parameters.pathStimuli,[currentStimulusName,'.jpg']);% create image path
@@ -290,18 +272,15 @@ for i = 1:Basics.nStimCat % preload the task stimuli (pictures)
 end
 Basics = orderfields(Basics); % orders all fields in the structure alphabetically
 
-%% ODDBALL TASK CONDITON (I.E. CONDITION 1) - SETTINGS
-
-% In this section, all task parameters relevant for the oddball task
-% condition (i.e., condition 1) are defined.
+%% ODDBALL CONDITION
 
 % STUDYMODE-SPECIFIC PARAMETERS:
-if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
+if contains(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
   Sets(1).set.nSeq = 5; % number of unique category combinations / number of training trials
   Sets(1).set.sequences = datasample(perms(1:Basics.nStimCat),Sets(1).set.nSeq,'Replace',false);
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
   Sets(1).set.nSeq = factorial(Basics.nStimCat); % number of unique category combinations / number of training trials
-  Sets(1).set.sequences = Shuffle(perms(1:Basics.nStimCat),2); % create a matrix with and randomly shuffle the order of all possible sequences
+  Sets(1).set.sequences = Shuffle(perms(1:Basics.nStimCat),2); % create a matrix with all possible sequences sand randomly shuffle the order
 end
 
 % GENERAL CONDITION PARAMETERS:
@@ -321,8 +300,6 @@ Sets(1).set.tTrial = Basics.tPreFixation + (Basics.tFixation + Sets(1).set.tStim
 Sets(1).set.tCond = Sets(1).set.tTrial * Sets(1).set.nSeq / 60; % duration of all training trials, in minutes
 Sets(1).set = orderfields(Sets(1).set); % orders all fields in the structure alphabetically
 
-%% ODDBALL TASK CONDITON (I.E. CONDITION 1) - CREATE DATA TABLE
-
 % CREATE INDIVIDUALIZED DATA TABLE
 Data(1).data = table; % create an empty table for the data of the training trials
 Data(1).data.id = repmat({Parameters.subjectInfo.id},Sets(1).set.nTrials,1); % add id
@@ -332,10 +309,10 @@ Data(1).data.run = nan(Sets(1).set.nTrials,1); % add a run counter
 Data(1).data.stimIndex = reshape(transpose(Sets(1).set.sequences),[Sets(1).set.nTrials,1]); % reshaped array of random sequences
 Data(1).data.targetName = Basics.stimNames(Data(1).data.stimIndex); % get the stimulus name for each trial
 Data(1).data.orient = zeros(Sets(1).set.nTrials,1); % initalize array for random stimulus orientation (0 (= upright presentation) as default)
-for k = 1:Basics.nStimCat % determine the (random) occurences of oddballs (equal number of oddballs for each stimulus)
-    Data(1).data.orient(datasample(find(Data(1).data.stimIndex == k),Sets(1).set.nTargetPerCat,'Replace',false)) = Basics.stimOrient(2); % set stimulus orientation to 180 (degree)
-end
 Data(1).data.tITI = random(Sets(1).set.distTruncExp,Sets(1).set.nTrials,1); % generate random ITIs for every trial drawn from the truncated exponential distribution
+for k = 1:Basics.nStimCat % determine the (random) occurences of oddballs (equal number of oddballs for each stimulus)
+    Data(1).data.orient(datasample(find(Data(1).data.stimIndex == k),Sets(1).set.nTargetPerCat,'Replace',false)) = 180; % set stimulus orientation to 180 (degree)
+end
 
 % INITIALIZE EMPTY ARRAYS TO RECORD RESPONSES AND STIMULUS TIMINGS:
 Data(1).data.keyIsDown = nan(Sets(1).set.nTrials,1); % initalize empty array to save whether key was down or not for every trial
@@ -348,17 +325,18 @@ Data(1).data.tFlipStim = nan(Sets(1).set.nTrials,1); % initalize empty array to 
 Data(1).data.tFlipITI = nan(Sets(1).set.nTrials,1); % initalize empty array to record flip time of ITI onset
 Data(1).data.tResponse = nan(Sets(1).set.nTrials,1); % initalize empty array to record the time of response
 
-%% SEQUENCE TASK CONDITON (I.E. CONDITION 2) - SETTINGS
+%% SEQUENCE TASK CONDITON
 
+% GENERAL CONDITION PARAMETERS:
 Sets(2).set.trialName = 'sequence'; % name of the trial type
 Sets(2).set.nSeqStim = Basics.nStimCat; % length of an object sequence (i.e., number of elements)
-Sets(2).set.tStim = 0.1; % time of stimulus presentation, in seconds
+Sets(2).set.tStim = 0.1; % duration of stimulus presentation, in seconds
 Sets(2).set.tISI = transpose(2.^(5:11)/1000); % ISI of flashes, in seconds (exponents of 2)
 Sets(2).set.tISI(Sets(2).set.tISI == 0.2560)  = []; % do not use ISI of 256 ms
 Sets(2).set.tISI(Sets(2).set.tISI == 1.0240)  = []; % do not use ISI of 1024 ms
-if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
+if contains(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
     Sets(2).set.nSeq = 1; % total number of object sequences per participant
-    Sets(2).set.tISI = vertcat(min(Sets(2).set.tISI),max(Sets(2).set.tISI));
+    Sets(2).set.tISI = vertcat(min(Sets(2).set.tISI),max(Sets(2).set.tISI)); % only use fastest and slowest ISI for practice and instructions
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
     Sets(2).set.nSeq = 15; % total number of object sequences per participant
 end
@@ -370,55 +348,71 @@ Sets(2).set.distLowerLim = 1; % lower limit of distribution
 Sets(2).set.distUpperLim = 5; % upper limit of distribution
 Sets(2).set.dataIndices = repmat(transpose(1:Sets(2).set.nTrials),1,Sets(2).set.nSeqStim); % create matrix to index the response data matrix
 
-% CREATE FLASH SEQUENCES FOR THE SUBJECT
-if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
+
+Sets(2).set.seqPick = transpose(reshape(1:factorial(Basics.nStimCat-1),3,8));
+
+% CREATE OBJECT SEQUENCES:
+if contains(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
     Sets(2).set.sequences = [1 2 3 4 5];
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
     Sets(2).set.sequencesAll = fliplr(perms(1:Basics.nStimCat)); % matrix with all possible sequences
-    indices = 1:length(Sets(2).set.sequencesAll); % list of all indices to index the all sequences matrix
-    Parameters.dirTask = dir(Parameters.pathScripts); % check task directory
-    Parameters.dirTaskFiles = {Parameters.dirTask.name}; % get directory files names
-    if ~any(contains(Parameters.dirTaskFiles,'usedIndices.mat')) % if previous indices do not exist (e.g., first subject)
-        warning('No previous flash sequence indices saved! This may be the case if you are running the first subject.') % warn
-        usedIndices = []; % define used indices as empty
-    else % if a file with previous indices exists
-        load('usedIndices.mat'); % load indices that we already used for previous subjects
-        if length(usedIndices) == length(Sets(2).set.sequencesAll) % if all indices have been used, reset the list
-            usedIndices = [];
-            warning('A new indices list has been created.') % show warning that a new list will be created
-        else
-        end
+    Sets(2).set.sequences = []; % initalize final array of drawn sequences for the subject
+    for k= 1:Basics.nStimCat
+        indices = find(Sets(2).set.sequencesAll(:,end) == k);
+        pick = Sets(2).set.seqPick(Parameters.subjectInfo.cbal,:);
+        Sets(2).set.sequences = vertcat(Sets(2).set.sequences,Sets(2).set.sequencesAll(indices(pick),:));    
     end
-    done = 0;
-    while done == 0
-        Sets(2).set.sequences = []; % initalize final array of drawn sequences for the subject
-        unusedSequenceIndices = true(1,length(Sets(2).set.sequencesAll)); % initalize array for unused indices
-        unusedSequenceIndices(usedIndices) = false; % set all previously used indices to zero
-        count = 0; % start while loop counter (set to 0)
-        while length(Sets(2).set.sequences) ~= Sets(2).set.nSeq % fill up the sequence matrix for the subject
-%             currentIndices = indices(unusedSequenceIndices); % get all unused indices
-            idx = datasample(indices(unusedSequenceIndices),1); % sample random index from the list of indices
-            currentSequence = Sets(2).set.sequencesAll(idx,:); % draw the corresponding sequence from the all sequence matrix
-            Sets(2).set.sequences = vertcat(Sets(2).set.sequences,currentSequence); % add drawn sequence to the final sequence matrix
-            [nLastElements,~] = hist(Sets(2).set.sequences(:,end),unique(Sets(2).set.sequences(:,end))); % check the number of last elements per category in sequence matrix
-            [nFirstElements,~] = hist(Sets(2).set.sequences(:,1),unique(Sets(2).set.sequences(:,1))); % check the number of first elements per category in sequence matrix
-            if any(nLastElements > Sets(2).set.nSeq/Basics.nStimCat) || any(nFirstElements > Sets(2).set.nSeq/Basics.nStimCat) % if the number of unique elements in the fist and last column of the matrix get bigger than 3
-                Sets(2).set.sequences(end,:) = []; % delete the previously added sequence again
-            else
-                unusedSequenceIndices(idx) = false; % mark the sequence index as used
-            end
-            if count > 10000 % if the loop takes too long, break and restart
-                break
-            end
-            count = count + 1; % count up
-        end
-        if length(Sets(2).set.sequences) == Sets(2).set.nSeq % if all sequences are drawn break out of the loop
-            break
-        end
-    end
-    usedIndices = indices(~unusedSequenceIndices); % save the used indices
-    save usedIndices.mat usedIndices; % save variable to directory
 end
+
+% CREATE FLASH SEQUENCES FOR THE SUBJECT
+% if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
+%     Sets(2).set.sequences = [1 2 3 4 5];
+% elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
+%     Sets(2).set.sequencesAll = fliplr(perms(1:Basics.nStimCat)); % matrix with all possible sequences
+%     indices = 1:length(Sets(2).set.sequencesAll); % list of all indices to index the all sequences matrix
+%     Parameters.dirTask = dir(Parameters.pathScripts); % check task directory
+%     Parameters.dirTaskFiles = {Parameters.dirTask.name}; % get directory files names
+%     if ~any(contains(Parameters.dirTaskFiles,'usedIndices.mat')) % if previous indices do not exist (e.g., first subject)
+%         warning('No previous flash sequence indices saved! This may be the case if you are running the first subject.') % warn
+%         usedIndices = []; % define used indices as empty
+%     else % if a file with previous indices exists
+%         load('usedIndices.mat'); % load indices that we already used for previous subjects
+%         if length(usedIndices) == length(Sets(2).set.sequencesAll) % if all indices have been used, reset the list
+%             usedIndices = [];
+%             warning('A new indices list has been created.') % show warning that a new list will be created
+%         else
+%         end
+%     end
+%     done = 0;
+%     while done == 0
+%         Sets(2).set.sequences = []; % initalize final array of drawn sequences for the subject
+%         unusedSequenceIndices = true(1,length(Sets(2).set.sequencesAll)); % initalize array for unused indices
+%         unusedSequenceIndices(usedIndices) = false; % set all previously used indices to zero
+%         count = 0; % start while loop counter (set to 0)
+%         while length(Sets(2).set.sequences) ~= Sets(2).set.nSeq % fill up the sequence matrix for the subject
+% %             currentIndices = indices(unusedSequenceIndices); % get all unused indices
+%             idx = datasample(indices(unusedSequenceIndices),1); % sample random index from the list of indices
+%             currentSequence = Sets(2).set.sequencesAll(idx,:); % draw the corresponding sequence from the all sequence matrix
+%             Sets(2).set.sequences = vertcat(Sets(2).set.sequences,currentSequence); % add drawn sequence to the final sequence matrix
+%             [nLastElements,~] = hist(Sets(2).set.sequences(:,end),unique(Sets(2).set.sequences(:,end))); % check the number of last elements per category in sequence matrix
+%             [nFirstElements,~] = hist(Sets(2).set.sequences(:,1),unique(Sets(2).set.sequences(:,1))); % check the number of first elements per category in sequence matrix
+%             if any(nLastElements > Sets(2).set.nSeq/Basics.nStimCat) || any(nFirstElements > Sets(2).set.nSeq/Basics.nStimCat) % if the number of unique elements in the fist and last column of the matrix get bigger than 3
+%                 Sets(2).set.sequences(end,:) = []; % delete the previously added sequence again
+%             else
+%                 unusedSequenceIndices(idx) = false; % mark the sequence index as used
+%             end
+%             if count > 10000 % if the loop takes too long, break and restart
+%                 break
+%             end
+%             count = count + 1; % count up
+%         end
+%         if length(Sets(2).set.sequences) == Sets(2).set.nSeq % if all sequences are drawn break out of the loop
+%             break
+%         end
+%     end
+%     usedIndices = indices(~unusedSequenceIndices); % save the used indices
+%     save usedIndices.mat usedIndices; % save variable to directory
+% end
 
 % Create shuffled unique combinations of sequences and flashISIs
 [p,q] = meshgrid(1:Sets(2).set.nSeq,1:Sets(2).set.nISI); % create meshgrid
@@ -452,24 +446,22 @@ Data(2).data.acc = nan(Sets(2).set.nTrials,1);
 Data(2).data.rt = nan(Sets(2).set.nTrials,1);
 
 % DRAW TARGET POSITIONS FROM POISSON DISTRIBUTION:
-Sets(2).set.distLamba = 1.7;
-% Sets(2).set.distPoisson = truncate(makedist('Poisson',Sets(2).set.distLamba),Sets(2).set.distLowerLim,Sets(2).set.distUpperLim); % create truncated Poisson distribution
-% Data(2).data.targetPos = random(Sets(2).set.distPoisson,Sets(2).set.nTrials,1); % draw positions of all trials from distribution
-% Data(2).data.targetPos = changem(Data(2).data.targetPos,5:-1:1,1:5); % switch values
+Sets(2).set.distLamba = 1.7; % lamda parameteter of the poisson distribution
 Sets(2).set.distPoisson = poisspdf(1:Basics.nStimCat,Sets(2).set.distLamba) / sum(poisspdf(1:Basics.nStimCat,Sets(2).set.distLamba));
 Sets(2).set.distNumValues = round(Sets(2).set.distPoisson * Sets(2).set.nTrials);
-Data(2).data.targetPos = transpose(repelem(5:-1:1,Sets(2).set.distNumValues)); % define target positions
-
-% draw incorrect response alternative from the same distribution:
-Data(2).data.targetPosAlt = random(Sets(2).set.distPoisson,Sets(2).set.nTrials,1);
-Data(2).data.targetPosAlt = changem(Data(2).data.targetPosAlt,5:-1:1,1:5); % changes values
-for j = 1:Sets(2).set.nTrials
+Data(2).data.targetPos = Shuffle(transpose(repelem(5:-1:1,Sets(2).set.distNumValues))); % define target positions
+for j = 1:Sets(2).set.nTrials % define the targets
     Data(2).data.target(j) = Data(2).data.stimIndex(j,Data(2).data.targetPos(j)); % defines the target
+end
+Data(2).data.targetName = Basics.stimNames(Data(2).data.target); % get target names
+
+% DEFINE ALTERNATIVE RESPONSE OPTIONS:
+Data(2).data.targetPosAlt = nan(Sets(2).set.nTrials,1); % initalize
+for j = 1:Sets(2).set.nTrials
     while isnan(Data(2).data.targetPosAlt(j)) || Data(2).data.targetPosAlt(j) == Data(2).data.targetPos(j)
-        Data(2).data.targetPosAlt(j) = changem(random(Sets(2).set.distPoisson,1),5:-1:1,1:5);
+        Data(2).data.targetPosAlt(j) = sum(rand >= cumsum([0, Sets(2).set.distPoisson]));
     end
 end
-Data(2).data.targetName = Basics.stimNames(Data(2).data.target);
 
 % INITIALIZE EMPTY ARRAYS TO RECORD RESPONSES AND STIMULUS TIMINGS:
 Data(2).data.tSequence = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
