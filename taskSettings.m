@@ -452,9 +452,13 @@ Data(2).data.acc = nan(Sets(2).set.nTrials,1);
 Data(2).data.rt = nan(Sets(2).set.nTrials,1);
 
 % DRAW TARGET POSITIONS FROM POISSON DISTRIBUTION:
-Sets(2).set.distPoisson = truncate(makedist('Poisson',1),Sets(2).set.distLowerLim,Sets(2).set.distUpperLim); % create truncated Poisson distribution
-Data(2).data.targetPos = random(Sets(2).set.distPoisson,Sets(2).set.nTrials,1); % draw positions of all trials from distribution
-Data(2).data.targetPos = changem(Data(2).data.targetPos,5:-1:1,1:5); % switch values
+Sets(2).set.distLamba = 1.7;
+% Sets(2).set.distPoisson = truncate(makedist('Poisson',Sets(2).set.distLamba),Sets(2).set.distLowerLim,Sets(2).set.distUpperLim); % create truncated Poisson distribution
+% Data(2).data.targetPos = random(Sets(2).set.distPoisson,Sets(2).set.nTrials,1); % draw positions of all trials from distribution
+% Data(2).data.targetPos = changem(Data(2).data.targetPos,5:-1:1,1:5); % switch values
+Sets(2).set.distPoisson = poisspdf(1:Basics.nStimCat,Sets(2).set.distLamba) / sum(poisspdf(1:Basics.nStimCat,Sets(2).set.distLamba));
+Sets(2).set.distNumValues = round(Sets(2).set.distPoisson * Sets(2).set.nTrials);
+Data(2).data.targetPos = transpose(repelem(5:-1:1,Sets(2).set.distNumValues)); % define target positions
 
 % draw incorrect response alternative from the same distribution:
 Data(2).data.targetPosAlt = random(Sets(2).set.distPoisson,Sets(2).set.nTrials,1);
