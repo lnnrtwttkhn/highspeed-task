@@ -31,7 +31,8 @@ Parameters.flipInterval = Screen('GetFlipInterval', Parameters.window); % get th
 DrawFormattedText(Parameters.window,'Willkommen zur Aufgabe "Visuelle Objekte Erkennen"!','center','center',Parameters.textColorBlack);
 DrawFormattedText(Parameters.window, 'Start mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
 Screen('Flip',Parameters.window); % flip to the screen
-tStart = KbPressWait(Parameters.deviceID); % save key press time
+VBLTime = KbPressWait(Parameters.deviceID); % save key press time
+Basics.tExperimentStart = VBLTime; % save start time of the task
 waitSecs = 0; % define stimulus duration
 
 % START THE RESPONSE QUEUE
@@ -41,7 +42,8 @@ KbQueueStart(Parameters.deviceID); % starts queue
 % MAIN TASK LOOP
 for run = Parameters.subjectInfo.run:Basics.nRunSession
     
-    fprintf('Starting run %d of %d.\n',run,Basics.nRunSession) % display task progress
+    fprintf('Starting run %d of %d (in the current session)\n',run,Basics.nRunSession) % display task progress
+    Basics.tRunStart = VBLTime; % save time of run start
     
     trialStart = Basics.breakTrials(run,Parameters.subjectInfo.session);
     trialStop = trialStart + Basics.nTrialsRun - 1;
@@ -182,7 +184,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
             DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
             Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
             VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
-            Data(cond).data.tFlipDelay = VBLTime; % save flip time
+            Data(cond).data.tFlipDelay(dataIndex,stim) = VBLTime; % save flip time
             waitSecs = Basics.tMaxSeqTrial; % define wait time
             resume(Sounds.soundWaitPlayer); % start to play sound during the delay period
             
@@ -250,7 +252,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         DrawFormattedText(Parameters.window,str,'center','center',Parameters.textColorBlack);
         DrawFormattedText(Parameters.window, 'Weiter mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
         Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
-        Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
+        VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
         fprintf('End run %d of %d.\n',run,Basics.nRunSession) % display task progress
         fprintf('Break. Saving data...\n'); % display current task status
     end
@@ -262,6 +264,12 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         'session',num2str(Parameters.subjectInfo.session),...
         'run',num2str(Parameters.subjectInfo.run)},'_'),'.mat']; % define file name
     save(fullfile(Parameters.pathData,fileName),'Sets','Data','Basics','Parameters'); % save data
+    
+    % SAVE DURATION OF RUN:
+    Basics.tRunStop = VBLTime; % save run stop time
+    Basics.tRunTotal = Basics.tRunStop - Basics.tRunStart; % calculate total run time
+    fprintf('Total run duration: %d minutes and %f seconds\n',floor(Basics.tRunTotal/60),rem(Basics.tRunTotal,60));
+    Basics.tRuns(run,Parameters.subjectInfo.session) = Basics.tRunTotal; % save duration of run
     
     % CONTINUE WITH NEXT RUN
     if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
@@ -275,6 +283,11 @@ end
 % STOP SOUND AND RESPONSE QUEUE:
 stop(Sounds.soundWaitPlayer); % stop to play sound
 KbQueueStop(Parameters.deviceID); % stop the response queue
+
+% GET TOTAL TIME:
+Basics.tExperimentStop = VBLTime; % save experiment stop time
+Basics.tExperimentTotal = Basics.tExperimentStop - Basics.tExperimentStart; % calculate total experiment time
+fprintf('Total experiment duration: %d minutes and %f seconds\n',floor(Basics.tExperimentTotal/60),rem(Basics.tExperimentTotal,60));
 
 % END OF THE TASK:
 DrawFormattedText(Parameters.window,'Ende der Aufgabe','center',Parameters.textSize * 2,Parameters.textColorBlack);
@@ -300,9 +313,5 @@ RestrictKeysForKbCheck; % reset the keyboard input checking for all keys
 Priority(0); % disable realtime mode
 Screen('Preference','SkipSyncTests',0);
 Screen('Preference','Verbosity',3);
-
-% GET TOTAL TIME:
-tEnd = toc(tStart); % get stop time
-fprintf('Total duration: %d minutes and %f seconds\n',floor(tEnd/60),rem(tEnd,60));
 
 end
