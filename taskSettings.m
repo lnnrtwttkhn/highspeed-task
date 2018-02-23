@@ -7,28 +7,46 @@ function [Sets,Data,Basics,Parameters,Sounds] = taskSettings
 
 %% DEFINE EXPERIMENTAL PARAMETERS:
 
-% DEFINE THE BASELOCATION DEPENDING ON THE PLATFORM:
-if ismac
-    Parameters.pathBase = '~'; % base location for Mac
-elseif ispc
-    Parameters.pathBase = '/'; % base location for Windows
-end
+% DISPLAY TASK PROGRESS
+fprintf('--------------------------------------------\n') % display task progress
+fprintf('Task settings\n') % display task progress
+fprintf('--------------------------------------------\n') % display task progress
 
 % GET COMPUTER DETAILS
 Parameters.computerName = computer; % save information about computer
 Parameters.computerHost = char(getHostName(java.net.InetAddress.getLocalHost));
-Parameters.computerOS = OSName; % save information about operating system
 Parameters.computerMatlab = ['R' version('-release')]; % save information about operating systemversion('-release')
 
-% SET ALL NECESSARY TASK PATHS AND GET SYSTEM INFORMATION
+% SET ALL NECESSARY TASK PATHS
+if strcmp(Parameters.computerHost,'lip-osx-003854') % lennart's macbook
+    Parameters.pathRoot = fullfile('/Users','wittkuhn','Seafile'); % set root path
+    Parameters.pathPsychtoolbox = fullfile('/Users','Shared','Psychtoolbox'); % set root path
+elseif strcmp(Parameters.computerHost,'lip-osx-004174') % imac in neurocode office
+    Parameters.pathRoot = fullfile('/Users','Shared','Seafile'); % set root path
+    Parameters.pathPsychtoolbox = fullfile('/Users','Shared','Psychtoolbox'); % set root path
+end
+
 Parameters.studyName = 'highspeed_task';
-Parameters.pathTask = fullfile(Parameters.pathBase,'Seafile',Parameters.studyName); % path to the task folder
+Parameters.pathTask = fullfile(Parameters.pathRoot,Parameters.studyName); % path to the task folder
 Parameters.pathScripts = fullfile(Parameters.pathTask,'scripts'); % path to the task script folder
 Parameters.pathPlots = fullfile(Parameters.pathTask,'plots'); % path to the task plot folder
 Parameters.pathStimuli = fullfile(Parameters.pathTask,'stimuli'); % path to the task stimuli folder
 Parameters.pathSounds = fullfile(Parameters.pathTask,'sounds'); % path to the task sounds folder
 Parameters.pathData = fullfile(Parameters.pathTask,'data'); % path to the task data folder
 cd(Parameters.pathScripts) % set the current directory to the script folder
+
+% TRY TO ADD PSYCHTOOLBOX TO THE SEARCH PATH
+try
+    Psychtoolboxversion
+catch ME
+    if strcmp(ME.identifier,'MATLAB:UndefinedFunction')
+        fprintf(2,'Psychtoolbox was not found in the MATLAB search path!\n');
+        fprintf(1,'Trying to add Psychtoolbox to the MATLAB search path now...\n');
+        addpath(genpath(Parameters.pathPsychtoolbox));
+    end
+    clear ME
+end
+fprintf('Psychtoolbox was added to the MATLAB search path.\n');
 
 % RUN KBQUEUE COMMANDS ONCE, TO AVOID CONFLICT WITH GETCHAR
 KbQueueCreate; % initalize response queue
@@ -72,7 +90,12 @@ Parameters.screenPosRight = Parameters.screenCenterX + Parameters.screenCenterX 
 % GET THE DEVICE NUMBER:
 [Parameters.deviceKeyNames,Parameters.deviceNames] = GetKeyboardIndices; % get a list of all devices connected
 if ismac
-    Parameters.deviceString = 'Apple Internal Keyboard / Trackpad'; % name of the scanner trigger box
+    if strcmp(Parameters.computerHost,'lip-osx-004174') % iMac in NeuroCode office
+        Parameters.deviceString = 'Magic Keyboard'; % name of the scanner trigger box
+    else
+        Parameters.deviceString = 'Apple Internal Keyboard / Trackpad'; % name of the scanner trigger box
+    end
+    
     Parameters.deviceID = 0;
     for k = 1:length(Parameters.deviceNames) % for each possible device
         if strcmp(Parameters.deviceNames{k},Parameters.deviceString) % compare the name to the name you want
@@ -100,8 +123,8 @@ while true
     Parameters.studyMode = str{selection}; % save selection of the study mode
     
     % ENTER PARTICIPANT DETAILS:
-    prompt = {'id','age','gender','session','run','cbal'}; % define the prompts
-    defaultAns = {'99999','99999','m/f','1/2','1','99999'}; % define the default answers
+    prompt = {'id','age','gender','session','run'}; % define the prompts
+    defaultAns = {'99999','99999','m/f','1/2','1'}; % define the default answers
     Parameters.subjectInfo = inputdlg(prompt,'Subject Info',1,defaultAns); % create and show dialog box
     if isempty(Parameters.subjectInfo) % if cancel was pressed
         f = msgbox('Process aborted: Please start again!','Error','error'); % show error message
@@ -125,7 +148,7 @@ while true
         f = msgbox('Run number is not valid!','Error','error');
         uiwait(f);
     else
-        
+
         % CHECK INPUTS (EXTERNALLY):
         choice = questdlg([{'Would you like to continue with this setup?'};...
             {''};...
@@ -134,89 +157,70 @@ while true
             'Continue?', ...
             'Cancel','OK','OK');
         
-        % END LOOP IF ALL DETAILS ARE CORRECT:
         if strcmp(choice,'OK')
-            fprintf(1,['Selected study mode: ',Parameters.studyMode,'\n']);
             Parameters.subjectInfo.age = str2double(Parameters.subjectInfo.age); % turn into double
             Parameters.subjectInfo.session = str2double(Parameters.subjectInfo.session); % turn into double
             Parameters.subjectInfo.run = str2double(Parameters.subjectInfo.run); % turn into double
-            Parameters.subjectInfo.cbal = str2double(Parameters.subjectInfo.cbal); % turn into double
-            break
         else
             f = msgbox('Process aborted: Please start again!','Error','error');
             uiwait(f);
         end
+        
+        % CHECK FOR PREVIOUS DATA FILES:
+        if ~strcmp(Parameters.studyMode,'mri')
+            pattern = strjoin({Parameters.studyName,Parameters.studyMode,'sub',Parameters.subjectInfo.id,'session',num2str(Parameters.subjectInfo.session)},{'_'});
+        elseif strcmp(Parameters.studyMode,'mri')
+            pattern = strjoin({Parameters.studyName,Parameters.studyMode,'sub',Parameters.subjectInfo.id},{'_'});
+        end
+        Parameters.dirDataSub = dir(fullfile(Parameters.pathData)); % get list of files in data directory
+        Parameters.dirDataSub = {Parameters.dirDataSub.name}; % get cell array of files names in data directory
+        Parameters.prevData = flip(Parameters.dirDataSub(contains(Parameters.dirDataSub,pattern)));
+        if isempty(Parameters.prevData)
+            if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
+                Parameters.subjectInfo.cbal = str2double(inputdlg('cbal','Enter cbal',1)); % create and show dialog box
+            else
+                Parameters.subjectInfo.cbal = NaN; % create and show dialog box
+            end
+            break
+        elseif ~isempty(Parameters.prevData) && ~strcmp(Parameters.studyMode,'mri')
+            f = msgbox('ID has already been used for this study setup!','Error','error');
+            uiwait(f);
+        elseif ~isempty(Parameters.prevData) && strcmp(Parameters.studyMode,'mri')
+            while true
+                if contains(Parameters.prevData,strjoin({'session',num2str(Parameters.subjectInfo.session)},{'_'}))
+                    f = warndlg('Found data of the current session!','Warning!');
+                    uiwait(f);
+                else
+                end
+                [selection,~] = listdlg('PromptString','Please choose the data that should be loaded:',...
+                    'SelectionMode','single','ListString',Parameters.prevData,'Name','Load previous data','ListSize',[350,150]); % list of previous data
+                pattern = Parameters.prevData{selection}; % name of the data file that is to be loaded
+                choice = questdlg([{'Do you really want to load this data file?'};{''};pattern],'Continue?','Cancel','OK','OK'); % check inputs by user
+                if strcmp(choice,'OK')
+                    load(fullfile(Parameters.pathData,pattern),'Data','Sets','Basics') % load the previous data file
+                    fprintf('Previous data file was successfully loaded: %s\n',pattern) % display task progress
+                    break
+                else
+                end
+            end
+            return % return the function
+        end
     end
-end
+end  
 
-%%
-
-% Parameters.subjectFolder = strjoin({Parameters.studyName,'sub',Parameters.subjectInfo.id},'_'); % create name of subject data folder
-% Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFolder)); % get list of files in data directory
-% Parameters.dirDataSub = {Parameters.dirDataSub.name}; % get cell array of files names in data directory
-% 
-% Parameters.subjectFile = strjoin({Parameters.subjectFolder,Parameters.studyMode,...
-%     'session',num2str(Parameters.subjectInfo.session),...
-%     'run',num2str(Parameters.subjectInfo.run)},'_');
-% 
-% 
-% any(contains(Parameters.dirData,pattern))
-% 
-% 
-% % CHECK IF SUBJECT FOLDER ALREADY EXISTS
-% 
-% % IF DATA FOLDER IS FOUND, CHECK THE DATA FILES INSIDE THE FOLDER:
-% if any(contains(Parameters.dirData,Parameters.subjectFile))
-%     % DATA FILES IN SUB FOLDER
-%     fprintf('Loading previous subject folder: %s\n',Parameters.subjectFile);
-%     Parameters.dirDataSub = dir(fullfile(Parameters.pathData,Parameters.subjectFile));
-%     Parameters.dirDataSub = {Parameters.dirDataSub.name}; % get cell array of files names in data directory
-%     Parameters.subjectFile = strjoin({Parameters.subjectFile,Parameters.studyMode},'_');
-%     if any(contains(Parameters.dirDataSub,Parameters.subjectFile))
-%         fprintf('Loading previous study mode: %s\n',Parameters.subjectFile);
-%         
-%     
-%         
-%     end
-%     find(contains(Parameters.dirDataSub,Parameters.studyName))
-%     
-%     strjoin({Parameters.subjectFolder,Parameters.studyMode},'_')
-%     
-%     
-%     % GET HIGHEST SESSION:
-%     dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
-%     maxSession = cellfun(@str2double,regexp(Parameters.dirDataSub,'(?<=sess)-*\d+','match'),'UniformOutput',false); % find the run numbers of the previous session
-%     [sess,~] = max(maxSession); % get the index of the last run of the last session
-%     
-%     % GET HIGHEST RUN:
-%     pattern = ['highspeedMRI_',Parameters.studyMode,'_sub',Parameters.subjectInfo.id,'_sess',num2str(sess)]; % check study mode and id
-%     idx = startsWith(Parameters.dataFiles,pattern); % now find all the files of the subject of the previous session
-%     dataMatch = Parameters.dataFiles(idx); % list all data files of the previous session
-%     maxRun = cellfun(@str2double,regexp(dataMatch,'(?<=run)-*\d+','match')); % find the run numbers of the previous session
-%     [run,~] = max(maxRun); % get the index of the last run of the last session
-%     
-%     % LOAD DATA FILE:
-%     pattern = ['highspeedMRI_',Parameters.studyMode,'_sub',Parameters.subjectInfo.id,'_sess',num2str(sess),'_run',num2str(run)]; % check study mode and id
-%     load(fullfile(Parameters.pathData,pattern),'Data','Sets','Basics') % load the previous data file
-%     fprintf('Loading previous data: %s\n',pattern) % display task progress
-%     
-%     
-%     
-%     
-%     
-%     
-% elseif isempty(Parameters.dataFolderIndex)
-%     mkdir(Parameters.pathData,Parameters.dataFolder); % create a new data directory for the current subject
-% end
-% 
-
-
-
+% PRINT TASK SETTINGS TO COMMAND WINDOW:
+fprintf('--------------------------------------------\n')
+fprintf(1,'Study mode: %s\n',Parameters.studyMode);
+fprintf(1,'ID: %s\n',Parameters.subjectInfo.id);
+fprintf(1,'Gender: %s\n',Parameters.subjectInfo.gender);
+fprintf(1,'Session: %d\n',Parameters.subjectInfo.session);
+fprintf(1,'Run: %d\n',Parameters.subjectInfo.session);
+fprintf(1,'Cbal: %d\n',Parameters.subjectInfo.cbal);
+fprintf('--------------------------------------------\n')
 
 %% TASK BASICS
 
 % INDICES FOR THE DIFFERENT TASK CONDITIONS
-indexOddball = 1;
 idxFlash = 2;
 idxOneTwo = 3;
 idxOneTwoExtra = 4;
@@ -341,7 +345,7 @@ end
 
 % CREATE UNIQUE COMBINATIONS OF SEQUENCES AND INTER-STIMULUS-INTERVALS:
 [p,q] = meshgrid(1:Sets(2).set.nSeq,1:Sets(2).set.nISI); % create meshgrid
-if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
+if contains(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
     Sets(2).set.flashSelector = [p(:) flipud(q(:))]; % shuffle order of occurence
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
     Sets(2).set.flashSelector = Shuffle([p(:) q(:)],2); % shuffle order of occurence
@@ -360,7 +364,7 @@ Data(2).data.orient = zeros(Sets(2).set.nTrials,1); % set stimulus orientation t
 Data(2).data.tITI = Sets(2).set.tISI(Sets(2).set.flashSelector(:,2)); % define inter-stimulus intervals
 
 % SET KEY TARGETS:
-if strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
+if contains(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
     Data(2).data.keyTarget = transpose(Shuffle(Parameters.keyTargets)); % once left, once rate for instructions and practice
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
     Data(2).data.keyTarget = Shuffle(transpose([repmat(Parameters.keyTargets,1,floor(Sets(2).set.nTrials/numel(Parameters.keyTargets))),Parameters.keyTargets(randi(numel(Parameters.keyTargets)))]));

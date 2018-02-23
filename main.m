@@ -32,8 +32,11 @@ DrawFormattedText(Parameters.window,'Willkommen zur Aufgabe "Visuelle Objekte Er
 DrawFormattedText(Parameters.window, 'Start mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
 Screen('Flip',Parameters.window); % flip to the screen
 VBLTime = KbPressWait(Parameters.deviceID); % save key press time
-Basics.tExperimentStart = VBLTime; % save start time of the task
 waitSecs = 0; % define stimulus duration
+
+% PRINT TASK PROGRESS TO COMMAND WINDOW:
+fprintf('--------------------------------------------\n')
+fprintf('Start task\n')
 
 % START THE RESPONSE QUEUE
 KbQueueCreate(Parameters.deviceID,Parameters.keyList); % creates queue, restricted to the relevant key targets
@@ -42,8 +45,9 @@ KbQueueStart(Parameters.deviceID); % starts queue
 % MAIN TASK LOOP
 for run = Parameters.subjectInfo.run:Basics.nRunSession
     
-    fprintf('Starting run %d of %d (in the current session)\n',run,Basics.nRunSession) % display task progress
-    Basics.tRunStart = VBLTime; % save time of run start
+    fprintf('--------------------------------------------\n')
+    fprintf('Starting run %d of %d (current session)\n',run,Basics.nRunSession) % display task progress
+    Basics.tRunStart = GetSecs; % save time of run start
     
     trialStart = Basics.breakTrials(run,Parameters.subjectInfo.session);
     trialStop = trialStart + Basics.nTrialsRun - 1;
@@ -54,9 +58,10 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         cond = Basics.trialStructure(trial); % get the current condition (i.e., oddball, sequence or repetition trial)
         
         % DISPLAY THE TASK PROGRESS IN THE COMMAND WINDOW:
-        fprintf('Starting trial %d of %d (total trials).\n',trial,length(Basics.trialStructure)) % display task progress
-        fprintf('Starting trial %d of %d (current session).\n',trial,Basics.nTrialsSession) % display task progress
-        fprintf('Starting trial %d of %d (current run).\n',trial,trialStop) % display task progress
+        fprintf('--------------------------------------------\n') % display task progress
+        fprintf('Starting trial %d of %d (total trials)\n',trial,length(Basics.trialStructure)) % display task progress
+        fprintf('Starting trial %d of %d (current session)\n',trial,Basics.nTrialsSession*Parameters.subjectInfo.session) % display task progress
+        fprintf('Starting trial %d of %d (current run)\n',trial,trialStop) % display task progress
         fprintf('Trial type: %s\n',Sets(cond).set.trialName) % display current trial type
         
         % UPDATE THE TRIAL COUNTER OF THE CURRENT TASK CONDITION:
@@ -237,12 +242,17 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         end
         
         % UPDATE TOTAL CURRENT REWARD:
-        totalWinTrain = sum(Data(idxTrain).data.orient == 180 & Data(idxTrain).data.acc == 1) * Basics.reward; % current total reward from all training trials
-        totalLossTrain = sum(Data(idxTrain).data.orient == 0 & Data(idxTrain).data.keyIsDown == 1) * - Basics.reward; % current total loss from all training trials
-        totalWinSequences = nansum(vertcat(Data(idxFlash).data.acc,Data(idxOneTwo).data.acc,Data(idxOneTwoExtra).data.acc)) * Basics.reward; % current total reward from all sequence trials
-        Basics.totalWinAll = totalWinTrain + totalLossTrain + totalWinSequences; % sum all rewards and losses
+        Basics.totalWinTrain = sum(Data(idxTrain).data.orient == 180 & Data(idxTrain).data.acc == 1) * Basics.reward; % current total reward from all training trials
+        Basics.totalLossTrain = sum(Data(idxTrain).data.orient == 0 & Data(idxTrain).data.keyIsDown == 1) * - Basics.reward; % current total loss from all training trials
+        Basics.totalWinSequences = nansum(vertcat(Data(idxFlash).data.acc,Data(idxOneTwo).data.acc,Data(idxOneTwoExtra).data.acc)) * Basics.reward; % current total reward from all sequence trials
+        Basics.totalWinAll = Basics.totalWinTrain + Basics.totalLossTrain + Basics.totalWinSequences; % sum all rewards and losses
         
     end
+    
+    % SAVE DURATION OF RUN
+    Basics.tRunStop = GetSecs; % save run stop time
+    Basics.tRunTotal = Basics.tRunStop - Basics.tRunStart; % calculate total run time
+    Basics.tRuns(run,Parameters.subjectInfo.session) = Basics.tRunTotal; % save duration of run
     
     % END OF RUN: TIME FOR A BREAK
     if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
@@ -253,7 +263,9 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         DrawFormattedText(Parameters.window, 'Weiter mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
         Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
         VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
-        fprintf('End run %d of %d.\n',run,Basics.nRunSession) % display task progress
+        fprintf('--------------------------------------------\n') % display task progress
+        fprintf('End run %d of %d (current session)\n',run,Basics.nRunSession) % display task progress
+        fprintf('Total run duration: %d minutes and %.f seconds\n',floor(Basics.tRunTotal/60),rem(Basics.tRunTotal,60)); % display run duration
         fprintf('Break. Saving data...\n'); % display current task status
     end
     
@@ -262,19 +274,13 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         Parameters.studyName,Parameters.studyMode,...
         'sub',num2str(Parameters.subjectInfo.id),...
         'session',num2str(Parameters.subjectInfo.session),...
-        'run',num2str(Parameters.subjectInfo.run)},'_'),'.mat']; % define file name
+        'run',num2str(run)},'_'),'.mat']; % define file name
     save(fullfile(Parameters.pathData,fileName),'Sets','Data','Basics','Parameters'); % save data
-    
-    % SAVE DURATION OF RUN:
-    Basics.tRunStop = VBLTime; % save run stop time
-    Basics.tRunTotal = Basics.tRunStop - Basics.tRunStart; % calculate total run time
-    fprintf('Total run duration: %d minutes and %f seconds\n',floor(Basics.tRunTotal/60),rem(Basics.tRunTotal,60));
-    Basics.tRuns(run,Parameters.subjectInfo.session) = Basics.tRunTotal; % save duration of run
     
     % CONTINUE WITH NEXT RUN
     if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
         fprintf('Data saved.\n'); % display current task status
-        VBLTime = KbPressWait(Parameters.deviceID); % save key press time
+%         VBLTime = KbPressWait(Parameters.deviceID); % save key press time
         waitSecs = 0; % define wait time
     end
     
@@ -284,25 +290,24 @@ end
 stop(Sounds.soundWaitPlayer); % stop to play sound
 KbQueueStop(Parameters.deviceID); % stop the response queue
 
-% GET TOTAL TIME:
-Basics.tExperimentStop = VBLTime; % save experiment stop time
-Basics.tExperimentTotal = Basics.tExperimentStop - Basics.tExperimentStart; % calculate total experiment time
-fprintf('Total experiment duration: %d minutes and %f seconds\n',floor(Basics.tExperimentTotal/60),rem(Basics.tExperimentTotal,60));
-
 % END OF THE TASK:
 DrawFormattedText(Parameters.window,'Ende der Aufgabe','center',Parameters.textSize * 2,Parameters.textColorBlack);
 if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
     str = sprintf('Sie haben insgesamt %.2f Euro verdient!',Basics.totalWinAll);
-elseif strcmp(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
+elseif contains(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
     str = sprintf('Sie haetten insgesamt %.2f Euro verdient!',Basics.totalWinAll);
 end
 DrawFormattedText(Parameters.window,str,'center','center',Parameters.textColorBlack);
 DrawFormattedText(Parameters.window, 'Bitte wenden Sie sich an die Versuchsleitung.','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
 Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
 Screen('Flip',Parameters.window); % flip to the screen
-KbPressWait; % save key press time
+Basics.tExperimentTotal = nansum(Basics.tRuns(:,Parameters.subjectInfo.session)); % calculate total experiment time
+WaitSecs(3); % wait for task to end
+fprintf('--------------------------------------------\n') % display task progress
 fprintf('End of the experiment\n'); % display current task status
+fprintf('Total experiment duration: %d minutes and %.f seconds\n',floor(Basics.tExperimentTotal/60),rem(Basics.tExperimentTotal,60));
 fprintf('Total reward: %.2f Euro\n',Basics.totalWinAll); % display current task status
+fprintf('--------------------------------------------\n') % display task progress
 
 % END OF THE EXPERIMENT:
 ShowCursor(); % show the cursor

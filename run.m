@@ -3,14 +3,8 @@
 % Study short title: Highspeed MRI
 % This file runs the Visual Object Detection Task
 
-function [Sets,Data,Basics,Parameters] = run
-
 close all; clear variables; clc;
 
 [Sets,Data,Basics,Parameters,Sounds] = taskSettings;
 
 [Sets,Data,Basics, Parameters] = main(Sets,Data,Basics,Parameters,Sounds);
-
-return
-
-end
