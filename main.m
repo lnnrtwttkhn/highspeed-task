@@ -21,6 +21,7 @@ Parameters.window = Screen('OpenWindow', Parameters.screenID); % open screen
 Priority(MaxPriority(Parameters.window)); % raise Matlab to realtime-priority mode to get the highest suitable priority
 Screen('TextFont', Parameters.window, Parameters.textFont); % select specific text font
 Screen('TextSize', Parameters.window, Parameters.textSize); % select specific text size
+Screen('BlendFunction',Parameters.window, 'GL_SRC_ALPHA','GL_ONE_MINUS_SRC_ALPHA'); % set blend function
 HideCursor(); % hides the cursor
 ListenChar(2); % suppress echo to the command line for keypresses
 KbName('UnifyKeyNames'); % used for cross-platform compatibility of keynaming
@@ -45,8 +46,26 @@ KbQueueStart(Parameters.deviceID); % starts queue
 % MAIN TASK LOOP
 for run = Parameters.subjectInfo.run:Basics.nRunSession
     
-    fprintf('--------------------------------------------\n')
-    fprintf('Starting run %d of %d (current session)\n',run,Basics.nRunSession) % display task progress
+    % WAIT FOR MRI TRIGGER TO START THE NEXT RUN:
+    if strcmp(Parameters.studyMode,'mri')
+        DrawFormattedText(Parameters.window, 'Bereit? \n\n Das Experiment startet in Kuerze!', 'center', 'center');
+        DrawFormattedText(Parameters.window,'Waiting for scanner pulse...','center','center',Parameters.textColorBlack); % prompt "waiting for scanner pulse"
+        Screen('Flip',Parameters.window); % flip to the screen
+        try
+            Parameters.scannerPort = 888; % scanner port
+            Parameters.TR = 1250; % time of repetition, TR, in milliseconds
+            Parameters.triggerSwitches = 10000/Parameters.TR; % TR of experiment onset; wait for 17th TR (at TR of .625s, this should allow for 10s of equilibration)
+            [SCAN t0] = fMRI_waitScannerTriggers(Parameters.scannerPort,run,Parameters.triggerSwitches,[]);
+            Basics.tScanner(run,Parameters.subjectInfo.session) = GetSecs;
+%             t0 = GetSecs;
+        catch
+            warning('MRI triggers are not working properly!') % display warning
+        end  
+    end
+    
+    % START THE NEXT RUN OF THE EXPERIMENT:
+    fprintf('--------------------------------------------\n'); % display task progress
+    fprintf('Starting run %d of %d (current session)\n',run,Basics.nRunSession); % display task progress
     Basics.tRunStart = GetSecs; % save time of run start
     
     trialStart = Basics.breakTrials(run,Parameters.subjectInfo.session);
@@ -83,7 +102,8 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         
         % SHOW FIXATION CROSS (BEFORE STIMULI LOOP; SEQUENCE TRIALS ONLY)
         if ismember(cond,[idxFlash idxOneTwo idxOneTwoExtra])
-            DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
+%             DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
+            Screen('DrawDots',Parameters.window,[Parameters.screenCenterX,Parameters.screenCenterY],Basics.dotSize,Basics.dotColor,[],Basics.dotType); % draw dot
             Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
             VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
             Data(cond).data.tFlipFix(Sets(cond).set.count) = VBLTime; % save flip time
@@ -99,7 +119,8 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
             
             % SHOW FIXATION CROSS (WITHIN STIMULI LOOP; TRAINING TRIALS ONLY)
             if ismember(cond,idxTrain)
-                DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
+%                 DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
+                Screen('DrawDots',Parameters.window,[Parameters.screenCenterX,Parameters.screenCenterY],Basics.dotSize,Basics.dotColor,[],Basics.dotType); % draw dot
                 Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished#
                 VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
                 Data(cond).data.tFlipFix(dataIndex) = VBLTime; % save flip time
@@ -128,6 +149,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
                     % START TO SHOW ISI (BLANK SCREEN) IF STIMULUS PRESENTATION TIME HAS ELAPSED:
                     % Check if the time of stimulus duration has elapsed since stimulus onset and if the ITI (blank screen) has not been flipped yet
                     if GetSecs >= Data(cond).data.tFlipStim(dataIndex) + Sets(cond).set.tStim - 0.5 * Parameters.flipInterval && isnan(Data(cond).data.tFlipITI(dataIndex))
+                        Screen('DrawDots',Parameters.window,[Parameters.screenCenterX,Parameters.screenCenterY],Basics.dotSize,Basics.dotColor,[],Basics.dotType); % draw dot
                         VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
                         Data(cond).data.tFlipITI(dataIndex) = VBLTime; % save flip time
                         waitSecs = Data(cond).data.tITI(dataIndex); % define wait time
@@ -176,6 +198,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
             % PROCEDURE FOR SEQUENCE TRIALS AFTER STIMULUS HAS BEEN SHOWN: SHOW ISI (I.E., FLIP BLANK SCREEN)
             elseif ismember(cond,[idxFlash,idxOneTwo,idxOneTwoExtra]) % only on sequence trials
                 Data(cond).data.tFlipStim(dataIndex,stim) = VBLTime; % save flip time
+                Screen('DrawDots',Parameters.window,[Parameters.screenCenterX,Parameters.screenCenterY],Basics.dotSize,Basics.dotColor,[],Basics.dotType); % draw dot
                 VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
                 Data(cond).data.tFlipITI(dataIndex,stim) = VBLTime; % save flip time
                 waitSecs = Data(cond).data.tITI(dataIndex); % define wait time
@@ -186,7 +209,8 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         if ismember(cond,[idxFlash idxOneTwo idxOneTwoExtra]) % only for sequence and repetition trials
             
             % WAITING PERIOD AFTER LAST STIMULUS (WAIT UNTIL 16s HAVE ELAPSED)
-            DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
+%             DrawFormattedText(Parameters.window,'+','center','center',Parameters.textColorBlack); % draw fixation cross to screen
+            Screen('DrawDots',Parameters.window,[Parameters.screenCenterX,Parameters.screenCenterY],Basics.dotSize,Basics.dotColor,[],Basics.dotType); % draw dot
             Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
             VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
             Data(cond).data.tFlipDelay(dataIndex,stim) = VBLTime; % save flip time
@@ -280,7 +304,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
     % CONTINUE WITH NEXT RUN
     if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
         fprintf('Data saved.\n'); % display current task status
-%         VBLTime = KbPressWait(Parameters.deviceID); % save key press time
+        VBLTime = KbPressWait(Parameters.deviceID); % save key press time
         waitSecs = 0; % define wait time
     end
     

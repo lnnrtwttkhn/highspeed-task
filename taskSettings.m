@@ -1,6 +1,6 @@
 function [Sets,Data,Basics,Parameters,Sounds] = taskSettings
 %% HIGHSPEED MRI TASK
-% Lennart Wittkuhn | Independent Max Planck Research Group NeuroCode
+% Lennart Wittkuhn, Independent Max Planck Research Group NeuroCode
 % Max Planck Institute for Human Development, Berlin, Germany
 % Contact: wittkuhn@mpib-berlin.mpg.de
 % 2017 - 2018
@@ -225,7 +225,7 @@ idxFlash = 2;
 idxOneTwo = 3;
 idxOneTwoExtra = 4;
 
-% DEFINE TOTAL NUMBER OF RUNS AND SESSIONS
+% DEFINE STUDY MODE SPECIFIC PARAMETERS
 if contains(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
     Basics.nSession = 1; % total number of sessions
     Basics.nRun = 1; % total number of runs
@@ -235,14 +235,22 @@ elseif strcmp(Parameters.studyMode,'behavioral')
 elseif strcmp(Parameters.studyMode,'mri')
     Basics.nSession = 2; % total number of sessions
     Basics.nRun = 8; % total number of runs
+    try
+        outportb(890,32) % sets pin for tristate in base+2 to up state. This allows to read from the scanner port.
+    catch
+        warning('Reading from the scanner port was unsuccessful!'); % display warning
+    end
 end
 
 % GENERAL TASK PARAMETERS
 Basics.stimNames = transpose({'Gesicht','Haus','Katze','Schuh','Stuhl'}); % list of all stimulus names
 Basics.nStimCat = numel(Basics.stimNames); % number of stimulus categories
+Basics.dotType = 1; % define the dot type (selected 1 for emphasis on improved performance)
+Basics.dotSize = 15; % define the size of the dot, in pixels
+Basics.dotColor = [105 105 105]; % define the color of the dot as rgb code
 Basics.reward = 0.03; % reward in cents for each correct response
-Basics.tFixation = 0.150; % duration of fixation, in seconds
-Basics.tPreFixation = 4; % duration of blank screen before fixation, in seconds
+Basics.tPreFixation = 3.850; % duration of blank screen before fixation, in seconds
+Basics.tFixation = 0.300; % duration of fixation, in seconds
 Basics.tTargetCue = 0.5; % duration of target cue presentation, in seconds
 Basics.tMaxSeqTrial = 16; % duration of one sequence trial, in seconds
 Basics.tResponseLimit = 1.5; % response time limit, in seconds
@@ -380,21 +388,20 @@ Data(2).data.rt = nan(Sets(2).set.nTrials,1); % initalize empty array to record 
 Sets(2).set.distLamba = 1.7; % lamda parameteter of the poisson distribution
 Sets(2).set.distPoisson = poisspdf(1:Basics.nStimCat,Sets(2).set.distLamba) / sum(poisspdf(1:Basics.nStimCat,Sets(2).set.distLamba)); % create possion pdf
 Sets(2).set.distNumValues = round(Sets(2).set.distPoisson * Sets(2).set.nTrials); % draw absolute number of respective target positons
+if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
+    Sets(2).set.distNumValues = Sets(2).set.distNumValues + [2 2 -4 0 0]; % handcrafted pseudo poisson
+end
 Data(2).data.targetPos = Shuffle(transpose(repelem(5:-1:1,Sets(2).set.distNumValues))); % define target positions
 
-% DEFINE THE TARGETS:
-for j = 1:Sets(2).set.nTrials
-    Data(2).data.target(j) = Data(2).data.stimIndex(j,Data(2).data.targetPos(j)); % defines the target
-end
-Data(2).data.targetName = Basics.stimNames(Data(2).data.target); % get target names
-
-% DEFINE ALTERNATIVE RESPONSE OPTIONS:
+% DEFINE TARGETS, TARGET NAMES AND ALTERNATIVE RESPONSE OPTIONS:
 Data(2).data.targetPosAlt = nan(Sets(2).set.nTrials,1); % initalize
 for j = 1:Sets(2).set.nTrials
+    Data(2).data.target(j) = Data(2).data.stimIndex(j,Data(2).data.targetPos(j)); % defines the target
     while isnan(Data(2).data.targetPosAlt(j)) || Data(2).data.targetPosAlt(j) == Data(2).data.targetPos(j)
         Data(2).data.targetPosAlt(j) = sum(rand >= cumsum([0, Sets(2).set.distPoisson]));
     end
 end
+Data(2).data.targetName = Basics.stimNames(Data(2).data.target); % get target names
 
 % INITIALIZE EMPTY ARRAYS TO RECORD RESPONSES AND STIMULUS TIMINGS:
 Data(2).data.tSequence = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
@@ -555,5 +562,7 @@ Basics.nTrialsSession = Basics.nTrials/Basics.nSession; % number of trials per s
 Basics.nRunSession = Basics.nRun/Basics.nSession; % number of runs per session
 Basics.breakTrials = reshape(1:Basics.nTrialsRun:Basics.nTrials,Basics.nRunSession,Basics.nSession); % define break trials
 Basics.tRuns = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
+Basics.tScanner = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
+
 
 end
