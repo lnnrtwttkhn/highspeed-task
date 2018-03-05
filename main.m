@@ -219,10 +219,10 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
             
             % SHOW RESPONSE OPTIONS
             DrawFormattedText(Parameters.window,Data(cond).data.targetName{dataIndex},'center','center',Parameters.textColorBlack); % draw text to screen
-            if Data(cond).data.keyTarget(dataIndex) == KbName('LeftArrow') % target is left
+            if strcmp(Data(cond).data.keyTarget(dataIndex),'left') % target is left
                 DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPos(dataIndex)),Parameters.screenPosLeft, Parameters.screenCenterY + Parameters.textSize * 5,Parameters.textColorBlack); % show target on the left side
                 DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPosAlt(dataIndex)),Parameters.screenPosRight, Parameters.screenCenterY + Parameters.textSize * 5,Parameters.textColorBlack); % show non-target on the right side
-            elseif Data(cond).data.keyTarget(dataIndex) == KbName('RightArrow') % target is right
+            elseif strcmp(Data(cond).data.keyTarget(dataIndex),'right') % target is right
                 DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPos(dataIndex)),Parameters.screenPosRight, Parameters.screenCenterY + Parameters.textSize * 5,Parameters.textColorBlack); % show target on the right side
                 DrawFormattedText(Parameters.window,num2str(Data(cond).data.targetPosAlt(dataIndex)),Parameters.screenPosLeft, Parameters.screenCenterY + Parameters.textSize * 5,Parameters.textColorBlack); % show target on the left side
             end
@@ -250,11 +250,15 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
             Data(cond).data.tResponse(dataIndex) = tResponse; % record the time of the response
             
             % PLAY FEEDBACK SOUND AND SAVE ACCURACY SCORE:
-            if Data(cond).data.keyIsDown(dataIndex) == 1 && Data(cond).data.keyIndex(dataIndex) == Data(cond).data.keyTarget(dataIndex) % correct response
+            if Data(cond).data.keyIsDown(dataIndex) == 1 && ...
+                    (ismember(Data(cond).data.keyIndex(dataIndex),Parameters.keyTargetsLeft) && strcmp(Data(cond).data.keyTarget(dataIndex),'left') || ...
+                    ismember(Data(cond).data.keyIndex(dataIndex),Parameters.keyTargetsRight) && strcmp(Data(cond).data.keyTarget(dataIndex),'right')) % correct response
                 sound(Sounds.soundCoinY,Sounds.soundCoinFs); % play coin sound
                 Data(cond).data.acc(dataIndex) = 1; % accuracy for this trial is 1
                 fprintf('Correct: +%.2f Euro\n',Basics.reward);
-            elseif Data(cond).data.keyIsDown(dataIndex) == 1 && Data(cond).data.keyIndex(dataIndex) ~= Data(cond).data.keyTarget(dataIndex) % wrong response
+            elseif Data(cond).data.keyIsDown(dataIndex) == 1 && ...
+                    ~(ismember(Data(cond).data.keyIndex(dataIndex),Parameters.keyTargetsLeft) && strcmp(Data(cond).data.keyTarget(dataIndex),'left') || ...
+                    ismember(Data(cond).data.keyIndex(dataIndex),Parameters.keyTargetsRight) && strcmp(Data(cond).data.keyTarget(dataIndex),'right')) % correct response
                 sound(Sounds.soundErrorY,Sounds.soundErrorFs); % play error sound
                 Data(cond).data.acc(Sets(cond).set.count) = 0; % accuracy for this trial is 0
                 disp('Wrong: 0.00 Euro');

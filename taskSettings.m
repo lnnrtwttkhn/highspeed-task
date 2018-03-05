@@ -17,24 +17,6 @@ Parameters.computerName = computer; % save information about computer
 Parameters.computerHost = char(getHostName(java.net.InetAddress.getLocalHost));
 Parameters.computerMatlab = ['R' version('-release')]; % save information about operating systemversion('-release')
 
-% SET ALL NECESSARY TASK PATHS
-if strcmp(Parameters.computerHost,'lip-osx-003854') % lennart's macbook
-    Parameters.pathRoot = fullfile('/Users','wittkuhn','Seafile'); % set root path
-    Parameters.pathPsychtoolbox = fullfile('/Users','Shared','Psychtoolbox'); % set root path
-elseif strcmp(Parameters.computerHost,'lip-osx-004174') % imac in neurocode office
-    Parameters.pathRoot = fullfile('/Users','Shared','Seafile'); % set root path
-    Parameters.pathPsychtoolbox = fullfile('/Users','Shared','Psychtoolbox'); % set root path
-end
-
-Parameters.studyName = 'highspeed_task';
-Parameters.pathTask = fullfile(Parameters.pathRoot,Parameters.studyName); % path to the task folder
-Parameters.pathScripts = fullfile(Parameters.pathTask,'scripts'); % path to the task script folder
-Parameters.pathPlots = fullfile(Parameters.pathTask,'plots'); % path to the task plot folder
-Parameters.pathStimuli = fullfile(Parameters.pathTask,'stimuli'); % path to the task stimuli folder
-Parameters.pathSounds = fullfile(Parameters.pathTask,'sounds'); % path to the task sounds folder
-Parameters.pathData = fullfile(Parameters.pathTask,'data'); % path to the task data folder
-cd(Parameters.pathScripts) % set the current directory to the script folder
-
 % TRY TO ADD PSYCHTOOLBOX TO THE SEARCH PATH
 try
     Psychtoolboxversion
@@ -46,7 +28,27 @@ catch ME
     end
     clear ME
 end
+Parameters.computerPTB = sscanf(PsychtoolboxVersion,'%s-'); % save psychtoolbox version
 fprintf('Psychtoolbox was added to the MATLAB search path.\n');
+
+% SET ROOT PATHS
+if strcmp(Parameters.computerHost,'lip-osx-003854') % lennart's macbook
+    Parameters.pathRoot = fullfile('/Users','wittkuhn','Seafile'); % set root path
+    Parameters.pathPsychtoolbox = fullfile(PsychtoolboxRoot); % set root path
+elseif strcmp(Parameters.computerHost,'lip-osx-004174') % imac in neurocode office
+    Parameters.pathRoot = fullfile('/Users','Shared','Seafile'); % set root path
+    Parameters.pathPsychtoolbox = fullfile(PsychtoolboxRoot); % set root path
+end
+
+% SET TASK PATHS
+Parameters.studyName = 'highspeed_task';
+Parameters.pathTask = fullfile(Parameters.pathRoot,Parameters.studyName); % path to the task folder
+Parameters.pathScripts = fullfile(Parameters.pathTask,'scripts'); % path to the task script folder
+Parameters.pathPlots = fullfile(Parameters.pathTask,'plots'); % path to the task plot folder
+Parameters.pathStimuli = fullfile(Parameters.pathTask,'stimuli'); % path to the task stimuli folder
+Parameters.pathSounds = fullfile(Parameters.pathTask,'sounds'); % path to the task sounds folder
+Parameters.pathData = fullfile(Parameters.pathTask,'data'); % path to the task data folder
+cd(Parameters.pathScripts) % set the current directory to the script folder
 
 % RUN KBQUEUE COMMANDS ONCE, TO AVOID CONFLICT WITH GETCHAR
 KbQueueCreate; % initalize response queue
@@ -81,9 +83,11 @@ Parameters.textSize = 50; % text size
 Parameters.textFont = 'Helvetica'; % font type
 Parameters.textColorBlack = [0 0 0]; % rgb code for color black
 KbName('UnifyKeyNames'); % ensure cross-platform compatibility of keynaming
-Parameters.keyTargets = [KbName('LeftArrow'),KbName('RightArrow')]; % list all relevant keys here
+Parameters.keyTargetsNames = {'left','right'}; % names of response options
+Parameters.keyTargetsLeft = [KbName('LeftArrow'),KbName('b'),KbName('z')]; % all relevant keys for left responses
+Parameters.keyTargetsRight = [KbName('RightArrow'),KbName('g'),KbName('r')]; % all relevant keys for right responses
 Parameters.keyList = zeros(1,256); % initalize a key list of 256 zeros
-Parameters.keyList(Parameters.keyTargets) = 1; % set keys of interest to 1
+Parameters.keyList([Parameters.keyTargetsLeft,Parameters.keyTargetsRight]) = 1; % set keys of interest to 1
 Parameters.screenPosLeft = Parameters.screenCenterX - Parameters.screenCenterX / 4; % position left of the response options
 Parameters.screenPosRight = Parameters.screenCenterX + Parameters.screenCenterX / 4; % position right of the response options
 
@@ -91,9 +95,9 @@ Parameters.screenPosRight = Parameters.screenCenterX + Parameters.screenCenterX 
 [Parameters.deviceKeyNames,Parameters.deviceNames] = GetKeyboardIndices; % get a list of all devices connected
 if ismac
     if strcmp(Parameters.computerHost,'lip-osx-004174') % iMac in NeuroCode office
-        Parameters.deviceString = 'Magic Keyboard'; % name of the scanner trigger box
+        Parameters.deviceString = 'Magic Keyboard'; % keyboard name
     else
-        Parameters.deviceString = 'Apple Internal Keyboard / Trackpad'; % name of the scanner trigger box
+        Parameters.deviceString = 'Apple Internal Keyboard / Trackpad'; % keyboard name
     end
     
     Parameters.deviceID = 0;
@@ -116,11 +120,12 @@ Parameters = orderfields(Parameters); % orders all fields in the structure alpha
 %% INPUT SUBJECT INFO
 while true
     
-    % SELECT THE STUDY MODE:
-    str = {'instructions_condition_1','instructions_condition_2','practice','behavioral','mri'}; % study mode options
-    [selection,~] = listdlg('PromptString','Please choose the study mode:',...
-        'SelectionMode','single','ListString',str,'Name','Study mode','ListSize',[160,70]);
-    Parameters.studyMode = str{selection}; % save selection of the study mode
+    % USER INPUT: SELECT STUDY MODE:
+    Parameters.studyOptions = {'instructions_condition_1','instructions_condition_2','practice','behavioral','mri'}; % study mode options
+    Parameters.guiSize = [160,70]; % size of the graphical user inteface (gui)
+    [i,~] = listdlg('PromptString','Please choose the study mode:',...
+        'SelectionMode','single','ListString',Parameters.studyOptions,'Name','Study mode','ListSize',Parameters.guiSize); % show gui
+    Parameters.studyMode = Parameters.studyOptions{i}; % save selection of the study mode
     
     % ENTER PARTICIPANT DETAILS:
     prompt = {'id','age','gender','session','run'}; % define the prompts
@@ -192,9 +197,9 @@ while true
                     uiwait(f);
                 else
                 end
-                [selection,~] = listdlg('PromptString','Please choose the data that should be loaded:',...
+                [i,~] = listdlg('PromptString','Please choose the data that should be loaded:',...
                     'SelectionMode','single','ListString',Parameters.prevData,'Name','Load previous data','ListSize',[350,150]); % list of previous data
-                pattern = Parameters.prevData{selection}; % name of the data file that is to be loaded
+                pattern = Parameters.prevData{i}; % name of the data file that is to be loaded
                 choice = questdlg([{'Do you really want to load this data file?'};{''};pattern],'Continue?','Cancel','OK','OK'); % check inputs by user
                 if strcmp(choice,'OK')
                     load(fullfile(Parameters.pathData,pattern),'Data','Sets','Basics') % load the previous data file
@@ -218,6 +223,7 @@ fprintf(1,'Run: %d\n',Parameters.subjectInfo.session);
 fprintf(1,'Cbal: %d\n',Parameters.subjectInfo.cbal);
 fprintf('--------------------------------------------\n')
 
+
 %% TASK BASICS
 
 % INDICES FOR THE DIFFERENT TASK CONDITIONS
@@ -238,7 +244,7 @@ elseif strcmp(Parameters.studyMode,'mri')
     try
         outportb(890,32) % sets pin for tristate in base+2 to up state. This allows to read from the scanner port.
     catch
-        warning('Reading from the scanner port was unsuccessful!'); % display warning
+        warning('Reading from the scanner port was not successful!'); % display warning
     end
 end
 
@@ -373,9 +379,11 @@ Data(2).data.tITI = Sets(2).set.tISI(Sets(2).set.flashSelector(:,2)); % define i
 
 % SET KEY TARGETS:
 if contains(Parameters.studyMode,'instructions') || strcmp(Parameters.studyMode,'practice')
-    Data(2).data.keyTarget = transpose(Shuffle(Parameters.keyTargets)); % once left, once rate for instructions and practice
+    Data(2).data.keyTarget = transpose(Shuffle(Parameters.keyTargetsNames)); % once left, once right response for instructions and practice
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
-    Data(2).data.keyTarget = Shuffle(transpose([repmat(Parameters.keyTargets,1,floor(Sets(2).set.nTrials/numel(Parameters.keyTargets))),Parameters.keyTargets(randi(numel(Parameters.keyTargets)))]));
+    Data(2).data.keyTarget = Shuffle(transpose(...
+        [repmat(Parameters.keyTargetsNames,1,floor(Sets(2).set.nTrials/numel(Parameters.keyTargetsNames))),...
+        Parameters.keyTargetsNames(randi(numel(Parameters.keyTargetsNames)))]));
 end
 
 % ADD MORE VARIABLES TO THE DATA FRAME:
@@ -455,7 +463,7 @@ Data(3).data.session = nan(Sets(3).set.nTrials,1); % add a session counter
 Data(3).data.run = nan(Sets(3).set.nTrials,1); % add a run counter
 Data(3).data.stimIndex = Sets(3).set.sequences; % set sequences
 Data(3).data.orient = zeros(Sets(3).set.nTrials,1); % set orientation of all stimuli to upright
-Data(3).data.keyTarget = Shuffle(transpose(repmat(Parameters.keyTargets,1,Sets(3).set.nTrials/numel(Parameters.keyTargets))));
+Data(3).data.keyTarget = Shuffle(transpose(repmat(Parameters.keyTargetsNames,1,Sets(3).set.nTrials/numel(Parameters.keyTargetsNames))));
 Data(3).data.keyIsDown = nan(Sets(3).set.nTrials,1); % initilaze empty array to collect key presses
 Data(3).data.keyIndex = nan(Sets(3).set.nTrials,1);
 Data(3).data.acc = nan(Sets(3).set.nTrials,1);
@@ -518,7 +526,7 @@ Data(4).data.session = nan(Sets(4).set.nTrials,1); % add a session counter
 Data(4).data.run = nan(Sets(4).set.nTrials,1); % add a run counter
 Data(4).data.stimIndex = Sets(4).set.sequences; % add sequences
 Data(4).data.orient = zeros(Sets(4).set.nTrials,1); % set orientation of all stimuli to upright
-Data(4).data.keyTarget = Shuffle(transpose([repmat(Parameters.keyTargets,1,2),Parameters.keyTargets(randi(numel(Parameters.keyTargets)))])); % key targets
+Data(4).data.keyTarget = Shuffle(transpose([repmat(Parameters.keyTargetsNames,1,2),Parameters.keyTargetsNames(randi(numel(Parameters.keyTargetsNames)))])); % key targets
 Data(4).data.keyIsDown = nan(Sets(4).set.nTrials,1); % initalite empty array to register key presses
 Data(4).data.keyIndex = nan(Sets(4).set.nTrials,1); % initialize empty array to record key identity
 Data(4).data.acc = nan(Sets(4).set.nTrials,1); % initalize empty array to record accuracy scores
@@ -563,6 +571,5 @@ Basics.nRunSession = Basics.nRun/Basics.nSession; % number of runs per session
 Basics.breakTrials = reshape(1:Basics.nTrialsRun:Basics.nTrials,Basics.nRunSession,Basics.nSession); % define break trials
 Basics.tRuns = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
 Basics.tScanner = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
-
 
 end
