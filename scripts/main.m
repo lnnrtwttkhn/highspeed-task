@@ -21,7 +21,7 @@ Parameters.window = Screen('OpenWindow', Parameters.screenID); % open screen
 Priority(MaxPriority(Parameters.window)); % raise Matlab to realtime-priority mode to get the highest suitable priority
 Screen('TextFont', Parameters.window, Parameters.textFont); % select specific text font
 Screen('TextSize', Parameters.window, Parameters.textSize); % select specific text size
-Screen('BlendFunction',Parameters.window, 'GL_SRC_ALPHA','GL_ONE_MINUS_SRC_ALPHA'); % set blend function
+Screen('BlendFunction',Parameters.window, 'GL_SRC_ALPHA','GL_ONE_MINUS_SRC_ALPHA'); % sets the blend function
 HideCursor(); % hides the cursor
 ListenChar(2); % suppress echo to the command line for keypresses
 KbName('UnifyKeyNames'); % used for cross-platform compatibility of keynaming
@@ -46,19 +46,25 @@ KbQueueStart(Parameters.deviceID); % starts queue
 % MAIN TASK LOOP
 for run = Parameters.subjectInfo.run:Basics.nRunSession
     
-    % WAIT FOR MRI TRIGGER TO START THE NEXT RUN:
+    % MRI STUDY MODE: WAIT FOR MRI TRIGGER TO START THE NEXT RUN:
     if strcmp(Parameters.studyMode,'mri')
         DrawFormattedText(Parameters.window,'Bereit? \n\n Das Experiment startet in Kuerze!', 'center', 'center');
         Screen('Flip',Parameters.window); % flip to the screen
-        WaitSecs(5); % wait for some time
+        waitSecs = 0; % define stimulus duration
         try
             Parameters.scannerPort = 888; % scanner port
             Parameters.TR = 1250; % time of repetition, TR, in milliseconds
             Parameters.tTriggerWait = 10000; % waiting time before task should start
             Parameters.triggerSwitches = Parameters.tTriggerWait/Parameters.TR; % TR of experiment onset; wait for 17th TR (at TR of .625s, this should allow for 10s of equilibration)
-            [SCAN t0] = fMRI_waitScannerTriggers(Parameters.scannerPort,run,Parameters.triggerSwitches,[]);
+            Basics.startState = inportb(Parameters.scannerPort); % read scanner port
+            oldValue = Parameters.startState;
+            while val = inportb(scannerPort); % read from the scanner port
+                startState = inportb(scannerPort); % inportb() is a macro that reads a word from the input scanner port
+                oldValue = startState;
+
+            
+            end 
             Basics.tScanner(run,Parameters.subjectInfo.session) = GetSecs;
-%             t0 = GetSecs;
         catch
             warning('MRI triggers are not working properly!') % display warning
         end  

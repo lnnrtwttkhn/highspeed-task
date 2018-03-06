@@ -30,6 +30,7 @@ catch ME
 end
 Parameters.computerPTB = sscanf(PsychtoolboxVersion,'%s-'); % save psychtoolbox version
 fprintf('Psychtoolbox was added to the MATLAB search path.\n'); % display task progress
+fprintf('--------------------------------------------\n') % display task progress
 
 % SET ROOT PATHS
 if strcmp(Parameters.computerHost,'lip-osx-003854') % lennart's macbook
@@ -58,7 +59,11 @@ cd(Parameters.pathScripts) % set the current directory to the script folder
 Parameters.dirTask = dir(Parameters.pathTask); % get information about task directory
 Parameters.dirTask = {Parameters.dirTask.name}; % get folder names in the task directors
 if ~any(strcmp(Parameters.dirTask,'data')) % check whether data directory exists
+    fprintf('Could not find the data directory. Will initalize a data directory now...\n') % display task progress
     mkdir(Parameters.pathTask,'data'); % create the data directory
+    fprintf('Data directory was successfully initalized!\n') % display task progress
+    fprintf('--------------------------------------------\n') % display task progress
+else
 end
 
 % CALL KBQUEUE COMMANDS ONCE, TO AVOID CONFLICT WITH GETCHAR

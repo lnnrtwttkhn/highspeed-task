@@ -26,15 +26,11 @@ oldValue = startState; %
 
 triggerNum = 0; % initalize trigger number
 while triggerNum < triggerSwitches
-    
     val = inportb(scannerPort); % read from the scanner port
-    %     RESU.LPT1{b} = [RESU.LPT1{b} val];
-    
     if val ~= oldValue
         triggerNum = triggerNum + 1; % add trigger number
         triggertime(b, triggerNum) = GetSecs; % get timestamps of each trigger pulse
     end
-    
     oldValue = val;
 end
 
