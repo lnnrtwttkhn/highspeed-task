@@ -79,8 +79,12 @@ GetSecs; clear ans; % dummy call to GetSecs
 rng(sum(100*clock)); % initalize random number generator
 
 % SCREEN SETTINGS:
-% Parameters.screenID = 0; % choose the lowest screen
-Parameters.screenID = max(Screen('Screens')); % choose the highest screen
+if strcmp(Parameters.computerHost,'LIP-XP-165-167') % computer at the MPIB MRI center
+    Parameters.screenID = 1; % choose screen 1
+else
+    Parameters.screenID = max(Screen('Screens')); % choose the highest screen
+    % Parameters.screenID = 0; % choose the lowest screen
+end
 [Parameters.screenSize(1), Parameters.screenSize(2)] = Screen('WindowSize',Parameters.screenID); % get the screen size
 Parameters.screenResolution = [Parameters.screenSize(1) Parameters.screenSize(2)]; % get screen resolution
 Parameters.screenCenterX = Parameters.screenSize(1)/2; % get center of x-axis
@@ -95,7 +99,12 @@ play(Sounds.soundWaitPlayer); % start player once
 pause(Sounds.soundWaitPlayer); % pause player immediately again
 
 % SET TEXT AND KEY PARAMETERS:
-Parameters.textSize = 50; % text size
+if strcmp(Parameters.computerHost,'LIP-XP-165-167')
+    Parameters.textSize = 35; % text size
+else
+     Parameters.textSize = 50; % text size
+end
+    
 Parameters.textFont = 'Helvetica'; % font type
 Parameters.textColorBlack = [0 0 0]; % rgb code for color black
 KbName('UnifyKeyNames'); % ensure cross-platform compatibility of keynaming
@@ -138,7 +147,7 @@ while true
     
     % USER INPUT: SELECT STUDY MODE:
     Parameters.studyOptions = {'instructions_condition_1','instructions_condition_2','practice','behavioral','mri'}; % study mode options
-    Parameters.guiSize = [160,70]; % size of the graphical user inteface (gui)
+    Parameters.guiSize = [200,70]; % size of the graphical user inteface (gui)
     [i,~] = listdlg('PromptString','Please choose the study mode:',...
         'SelectionMode','single','ListString',Parameters.studyOptions,'Name','Study mode','ListSize',Parameters.guiSize); % show gui
     Parameters.studyMode = Parameters.studyOptions{i}; % save selection of the study mode
@@ -387,11 +396,10 @@ end
 if ~isempty(regexp(Parameters.studyMode,'instructions','once')) || strcmp(Parameters.studyMode,'practice')
     Sets(2).set.flashSelector = [p(:) flipud(q(:))]; % shuffle order of occurence
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
-    Sets(2).set.flashSelector = Shuffle([p(:) q(:)],2); % shuffle order of occurence
+    Sets(2).set.flashSelector = [p(:) q(:)]; % sorted combination of sequences and ITIs
+    Sets(2).set.flashSelector = Sets(2).set.flashSelector(randperm(end),:); % shuffled combination
 end
 Sets(2).set.sequences = Sets(2).set.sequences(Sets(2).set.flashSelector(:,1),:); % arrange the flash sequences according to the flash selector
-
-%BEARBEITET BIS HIER (05.02.18)
 
 % CREATE DATA TABLE:
 Data(2).data = dataset; % initalize table
@@ -426,9 +434,9 @@ Sets(2).set.distNumValues = round(Sets(2).set.distPoisson * Sets(2).set.nTrials)
 if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
     Sets(2).set.distNumValues = Sets(2).set.distNumValues + [2 2 -4 0 0]; % handcrafted pseudo poisson
 end
-Data(2).data.targetPos = Shuffle(transpose(repelem(5:-1:1,Sets(2).set.distNumValues))); % define target positions
 
 % DEFINE TARGETS, TARGET NAMES AND ALTERNATIVE RESPONSE OPTIONS:
+Data(2).data.targetPos = transpose(Shuffle(cell2mat(arrayfun(@(x,y) repmat(x,1,y), Basics.nStimCat:-1:1,Sets(2).set.distNumValues,'uni',0)))); % define target positions
 Data(2).data.targetPosAlt = nan(Sets(2).set.nTrials,1); % initalize
 for j = 1:Sets(2).set.nTrials
     Data(2).data.target(j) = Data(2).data.stimIndex(j,Data(2).data.targetPos(j)); % defines the target
@@ -470,16 +478,14 @@ Sets(3).set.tCond = Sets(3).set.tOneTwoTrial * Sets(3).set.nTrials / 60; % durat
 % CREATE SEQUENCES:
 Sets(3).set.sequences = []; % initalize empty matrix
 for x = 1:Sets(3).set.nRep
-    oneTwoSequence = ones(Sets(3).set.nSeq,Sets(3).set.nSeqStim); % create 8 x 8 matrix with ones
-    oneTwoSequence = tril(oneTwoSequence,0); % create matrix diagonal with 1s and 0s
-    oneTwoSequence = fliplr(oneTwoSequence); % flip matrix from left to right
     a = transpose(randperm(Basics.nStimCat)); % generate a random sequence of all object categories
     a(a == x) = []; % delete the current first category (x)
-    oneTwoSequence = oneTwoSequence .* vertcat(a,flipud(a));
+    oneTwoSequence = repmat(vertcat(a,flipud(a)),1,Sets(3).set.nSeqStim);
+    oneTwoSequence = fliplr(tril(oneTwoSequence,0));
     oneTwoSequence(oneTwoSequence == 0) = x;
     Sets(3).set.sequences = vertcat(Sets(3).set.sequences,oneTwoSequence);
 end
-Sets(3).set.sequences = Shuffle(Sets(3).set.sequences,2); % randomly shuffle all sequences
+Sets(3).set.sequences = Sets(3).set.sequences(randperm(end),:); % randomly shuffle all sequences
 Sets(3).set = orderfields(Sets(3).set); % orders all fields in the structure alphabetically
 
 % CREATE DATA FRAME:
@@ -542,7 +548,7 @@ Sets(4).set.sequences = repmat(transpose(1:Basics.nStimCat),Sets(4).set.nRep,Set
 while any(Sets(4).set.sequences(:,end) == Sets(4).set.sequences(:,end-1)) % while the last and second-to-last element of any row are the same ...
     Sets(4).set.sequences(:,end) = transpose(randperm(Basics.nStimCat)); % ... change the last elements of rows randomly
 end
-Sets(4).set.sequences = Shuffle(Sets(4).set.sequences,2); % randomly shuffle all sequences
+Sets(4).set.sequences = Sets(4).set.sequences(randperm(end),:); % randomly shuffle all sequences
 Sets(4).set = orderfields(Sets(4).set); % orders all fields in the structure alphabetically
 
 % CREATE DATA TABLE:
