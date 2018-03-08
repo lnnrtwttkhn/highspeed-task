@@ -273,6 +273,12 @@ elseif strcmp(Parameters.studyMode,'mri')
     end
 end
 
+% GENERAL MRI RELATED PARAMETERS:
+Basics.scannerPort = 888; % scanner port
+Basics.TR = 1250; % time of repetition, TR, in milliseconds
+Basics.tTriggerWait = 10000; % waiting time before task should start
+Basics.triggerSwitches = Basics.tTriggerWait/Basics.TR; % TR of experiment onset; wait for 17th TR (at TR of .625s, this should allow for 10s of equilibration)
+
 % GENERAL TASK PARAMETERS
 Basics.stimNames = transpose({'Gesicht','Haus','Katze','Schuh','Stuhl'}); % list of all stimulus names
 Basics.nStimCat = numel(Basics.stimNames); % number of stimulus categories
@@ -421,22 +427,27 @@ elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,
         Parameters.keyTargetsNames(randi(numel(Parameters.keyTargetsNames)))]));
 end
 
-% ADD MORE VARIABLES TO THE DATA FRAME:
+% INITALIZE RESPONSE RELATED VARIABLES AND ADD TO THE DATA FRAME:
 Data(2).data.keyIsDown = nan(Sets(2).set.nTrials,1); % initalite empty array to register key presses
 Data(2).data.keyIndex = nan(Sets(2).set.nTrials,1); % initialize empty array to record key identity
 Data(2).data.acc = nan(Sets(2).set.nTrials,1); % initalize empty array to record accuracy scores
 Data(2).data.rt = nan(Sets(2).set.nTrials,1); % initalize empty array to record reaction times
 
 % DRAW TARGET POSITIONS FROM POISSON DISTRIBUTION:
-Sets(2).set.distLamba = 1.7; % lamda parameteter of the poisson distribution
+Sets(2).set.distLamba = 1.9; % lamda parameteter of the poisson distribution
 Sets(2).set.distPoisson = poisspdf(1:Basics.nStimCat,Sets(2).set.distLamba) / sum(poisspdf(1:Basics.nStimCat,Sets(2).set.distLamba)); % create possion pdf
-Sets(2).set.distNumValues = round(Sets(2).set.distPoisson * Sets(2).set.nTrials); % draw absolute number of respective target positons
-if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
-    Sets(2).set.distNumValues = Sets(2).set.distNumValues + [2 2 -4 0 0]; % handcrafted pseudo poisson
+Data(2).data.targetPos = nan(Sets(2).set.nTrials,1); % initalize
+if ~isempty(regexp(Parameters.studyMode,'instructions','once')) || strcmp(Parameters.studyMode,'practice')
+    Sets(2).set.distNumValues = round(Sets(2).set.distPoisson * Sets(2).set.nTrials); % draw absolute number of respective target positons
+elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
+    for i = 1:Sets(2).set.nISI
+        idx = Sets(2).set.flashSelector(:,2) == i; % find flash sequences
+        Sets(2).set.distNumValues = round(Sets(2).set.distPoisson * Sets(2).set.nSeq); % draw absolute number of respective target positons
+        Data(2).data.targetPos(idx) = transpose(Shuffle(cell2mat(arrayfun(@(x,y) repmat(x,1,y), Basics.nStimCat:-1:1,Sets(2).set.distNumValues,'uni',0)))); % define target positions
+    end
 end
 
-% DEFINE TARGETS, TARGET NAMES AND ALTERNATIVE RESPONSE OPTIONS:
-Data(2).data.targetPos = transpose(Shuffle(cell2mat(arrayfun(@(x,y) repmat(x,1,y), Basics.nStimCat:-1:1,Sets(2).set.distNumValues,'uni',0)))); % define target positions
+% DEFINE TARGETS AND ALTERNATIVE RESPONSE OPTIONS:
 Data(2).data.targetPosAlt = nan(Sets(2).set.nTrials,1); % initalize
 for j = 1:Sets(2).set.nTrials
     Data(2).data.target(j) = Data(2).data.stimIndex(j,Data(2).data.targetPos(j)); % defines the target
@@ -444,6 +455,8 @@ for j = 1:Sets(2).set.nTrials
         Data(2).data.targetPosAlt(j) = sum(rand >= cumsum([0, Sets(2).set.distPoisson]));
     end
 end
+
+% DEFINE TARGET NAMES:
 Data(2).data.targetName = Basics.stimNames(Data(2).data.target); % get target names
 
 % INITIALIZE EMPTY ARRAYS TO RECORD RESPONSES AND STIMULUS TIMINGS:
@@ -603,6 +616,8 @@ Basics.nTrialsSession = Basics.nTrials/Basics.nSession; % number of trials per s
 Basics.nRunSession = Basics.nRun/Basics.nSession; % number of runs per session
 Basics.breakTrials = reshape(1:Basics.nTrialsRun:Basics.nTrials,Basics.nRunSession,Basics.nSession); % define break trials
 Basics.tRuns = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
-Basics.tScanner = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
+Basics.tStartTask = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
+Basics.tTrigger = nan(Basics.nRun,Basics.triggerSwitches); % initalize empty array to record run time
+
 
 end

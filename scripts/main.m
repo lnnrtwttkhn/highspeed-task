@@ -52,22 +52,21 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         Screen('Flip',Parameters.window); % flip to the screen
         waitSecs = 0; % define stimulus duration
         try
-            Parameters.scannerPort = 888; % scanner port
-            Parameters.TR = 1250; % time of repetition, TR, in milliseconds
-            Parameters.tTriggerWait = 10000; % waiting time before task should start
-            Parameters.triggerSwitches = Parameters.tTriggerWait/Parameters.TR; % TR of experiment onset; wait for 17th TR (at TR of .625s, this should allow for 10s of equilibration)
-            Basics.startState = inportb(Parameters.scannerPort); % read scanner port
-            oldValue = Parameters.startState;
-            while val = inportb(scannerPort); % read from the scanner port
-                startState = inportb(scannerPort); % inportb() is a macro that reads a word from the input scanner port
-                oldValue = startState;
-
-            
-            end 
-            Basics.tScanner(run,Parameters.subjectInfo.session) = GetSecs;
+            Basics.startState = inportb(Basics.scannerPort); % read from scanner port
+            oldState = Basics.startState; % save old trigger state in a separate variable
+            triggerCounter = 0; % initalize the trigger counter
+            while triggerCounter < Basics.triggerSwitches
+                newState = inportb(Basics.scannerPort); % read from scanner port
+                if newState ~= oldState
+                    triggerCounter = triggerCounter + 1; % update the trigger counter
+                    Basics.tTrigger(run,triggerCounter) = GetSecs; % get time of the trigger switch
+                end
+                oldState = newState; % update the old state
+            end
+            Basics.tStartTask(run,Parameters.subjectInfo.session) = GetSecs; % start of the experiment after triggers
         catch
             warning('MRI triggers are not working properly!') % display warning
-        end  
+        end
     end
     
     % START THE NEXT RUN OF THE EXPERIMENT:
