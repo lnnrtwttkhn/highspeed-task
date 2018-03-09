@@ -50,31 +50,24 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
     if strcmp(Parameters.studyMode,'mri')
         DrawFormattedText(Parameters.window,'Bereit? \n\n Das Experiment startet in Kuerze!','center','center',Parameters.textColorBlack);
         VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
-        waitSecs = 0; % define stimulus duration
         try
-            Basics.startState = inportb(Basics.scannerPort); % read from scanner port
+            Basics.startState = inportb(Basics.scannerPort); % read from the scanner port
             oldState = Basics.startState; % save old trigger state in a separate variable
             triggerCounter = 0; % initalize the trigger counter
             while triggerCounter < Basics.triggerSwitches
-                newState = inportb(Basics.scannerPort); % read from scanner port
+                newState = inportb(Basics.scannerPort); % read from the scanner port
                 if newState ~= oldState
                     triggerCounter = triggerCounter + 1; % update the trigger counter
                     Basics.runInfo.tTrigger(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run,triggerCounter) = GetSecs;
-%                     Basics.tTrigger(run,triggerCounter) = GetSecs; % get time of the trigger switch
                     DrawFormattedText(Parameters.window,num2str(Basics.triggerSwitches-triggerCounter),'center','center',Parameters.textColorBlack);
                     VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
-                    waitSecs = 0; % define stimulus duration
                 end
                 oldState = newState; % update the old state
             end
-            Basics.runInfo.tTaskOnset(Basics.runInfo.session == Parameters.subjectInfo.session && Basics.runInfo.run == run) = GetSecs; % start of the experiment after triggers
-%             Basics.tStartTask(run,Parameters.subjectInfo.session) = GetSecs; % start of the experiment after triggers
+            Basics.runInfo.tRunStart(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run) = GetSecs; % start run start time
         catch
             warning('MRI triggers are not working properly!') % display warning
         end
-        DrawFormattedText(Parameters.window,'Los!','center','center',Parameters.textColorBlack);
-        VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
-        waitSecs = 0; % define stimulus duration
     end
     
     % START THE NEXT RUN OF THE EXPERIMENT:
@@ -275,7 +268,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
                     ismember(Data(cond).data.keyIndex(dataIndex),Parameters.keyTargetsRight) && strcmp(Data(cond).data.keyTarget(dataIndex),'right')) % correct response
                 sound(Sounds.soundErrorY,Sounds.soundErrorFs); % play error sound
                 Data(cond).data.acc(Sets(cond).set.count) = 0; % accuracy for this trial is 0
-                disp('Wrong: 0.00 Euro');
+                disp('Incorrect: 0.00 Euro');
             elseif Data(cond).data.keyIsDown(dataIndex) == 0 % no reaction
                 sound(Sounds.soundErrorY,Sounds.soundErrorFs); % play error sound
                 Data(cond).data.acc(dataIndex) = 0; % accuracy for this trial is 0
@@ -291,11 +284,11 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         
     end
     
-    % SAVE DURATION OF RUN
-    Basics.tRunStop = GetSecs; % save run stop time
-    Basics.tRunTotal = Basics.tRunStop - Basics.tRunStart; % calculate total run time
-    Basics.tRuns(run,Parameters.subjectInfo.session) = Basics.tRunTotal; % save duration of run
-    Basics.runInfo.tRun(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run) = Basics.tRunTotal; % save duration of run
+    % SAVE DURATION OF THE CURRENT RUN
+    Basics.runInfo.tRunStop(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run) = GetSecs; % save run stop time
+    Basics.runInfo.tRunTotal(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run) = ...
+        Basics.runInfo.tRunStop(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run) - ...
+    Basics.runInfo.tRunStart(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run); % save duration of run
     
     % END OF RUN: TIME FOR A BREAK
     if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
@@ -322,7 +315,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
     
     % CONTINUE WITH NEXT RUN
     if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
-        fprintf('Data saved.\n'); % display current task status
+        fprintf('Data saved successfully.\n'); % display current task status
         VBLTime = KbPressWait(Parameters.deviceID); % save key press time
         waitSecs = 0; % define wait time
     end

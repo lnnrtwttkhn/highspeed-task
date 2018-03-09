@@ -32,6 +32,15 @@ Parameters.computerPTB = sscanf(PsychtoolboxVersion,'%s-'); % save psychtoolbox 
 fprintf('Psychtoolbox was added to the MATLAB search path.\n'); % display task progress
 fprintf('--------------------------------------------\n') % display task progress
 
+% TRY TO ACCESS THE SCANNER PORT
+try
+    fprintf('Trying to read the scanner port now...\n'); % display task progress
+    outportb(890,32) % sets pin for tristate in base+2 to up state. This allows to read from the scanner port.
+catch
+    warning('Reading from the scanner port was not successful!'); % display warning
+end
+fprintf('--------------------------------------------\n') % display task progress
+
 % SET ROOT PATHS
 if strcmp(Parameters.computerHost,'lip-osx-003854') % lennart's macbook
     Parameters.pathRoot = fullfile('/Users','wittkuhn','Seafile'); % set root path
@@ -76,6 +85,7 @@ WaitSecs(0.1); % dummay call to WaitSecs
 GetSecs; clear ans; % dummy call to GetSecs
 
 % INITALIZE RANDOM NUMBER GENERATOR:
+% rng('default'); % reinitalize the random number generator to default
 rng(sum(100*clock)); % initalize random number generator
 
 % SCREEN SETTINGS:
@@ -100,7 +110,7 @@ pause(Sounds.soundWaitPlayer); % pause player immediately again
 
 % SET TEXT AND KEY PARAMETERS:
 if strcmp(Parameters.computerHost,'LIP-XP-165-167')
-    Parameters.textSize = 35; % text size
+    Parameters.textSize = 25; % text size
 else
      Parameters.textSize = 50; % text size
 end
@@ -124,7 +134,6 @@ if ismac
     else
         Parameters.deviceString = 'Apple Internal Keyboard / Trackpad'; % keyboard name
     end
-    
     Parameters.deviceID = 0;
     for k = 1:length(Parameters.deviceNames) % for each possible device
         if strcmp(Parameters.deviceNames{k},Parameters.deviceString) % compare the name to the name you want
@@ -136,9 +145,8 @@ if ismac
         error('No device by that name was detected');
     end
 elseif ispc
-  Parameters.deviceID =  Parameters.deviceKeyNames; 
+  Parameters.deviceID = Parameters.deviceKeyNames; 
 end
-clear k % clear unneccessary variable
 
 Parameters = orderfields(Parameters); % orders all fields in the structure alphabetically
 
@@ -147,7 +155,7 @@ while true
     
     % USER INPUT: SELECT STUDY MODE:
     Parameters.studyOptions = {'instructions_condition_1','instructions_condition_2','practice','behavioral','mri'}; % study mode options
-    Parameters.guiSize = [200,70]; % size of the graphical user inteface (gui)
+    Parameters.guiSize = [250,70]; % size of the graphical user inteface (gui)
     [i,~] = listdlg('PromptString','Please choose the study mode:',...
         'SelectionMode','single','ListString',Parameters.studyOptions,'Name','Study mode','ListSize',Parameters.guiSize); % show gui
     Parameters.studyMode = Parameters.studyOptions{i}; % save selection of the study mode
@@ -266,18 +274,10 @@ elseif strcmp(Parameters.studyMode,'behavioral')
 elseif strcmp(Parameters.studyMode,'mri')
     Basics.nSession = 2; % total number of sessions
     Basics.nRun = 8; % total number of runs
-    try
-        outportb(890,32) % sets pin for tristate in base+2 to up state. This allows to read from the scanner port.
-    catch
-        warning('Reading from the scanner port was not successful!'); % display warning
-    end
+    Basics.scannerPort = 888; % scanner port
+    Basics.triggerSwitches = 5; % number of TRs before the experiment starts
 end
 
-% GENERAL MRI RELATED PARAMETERS:
-Basics.scannerPort = 888; % scanner port
-Basics.TR = 1250; % time of repetition, TR, in milliseconds
-Basics.tTriggerWait = 10000; % waiting time before task should start
-Basics.triggerSwitches = Basics.tTriggerWait/Basics.TR; % TR of experiment onset; wait for 17th TR (at TR of .625s, this should allow for 10s of equilibration)
 
 % GENERAL TASK PARAMETERS
 Basics.stimNames = transpose({'Gesicht','Haus','Katze','Schuh','Stuhl'}); % list of all stimulus names
@@ -296,7 +296,6 @@ for i = 1:Basics.nStimCat % preload the task stimuli (pictures)
     theImageLocation = fullfile(Parameters.pathStimuli,[currentStimulusName,'.jpg']);% create image path
     Basics.stimImages(i).img = imread(theImageLocation); % read the image
 end
-Basics = orderfields(Basics); % orders all fields in the structure alphabetically
 
 %% ODDBALL TRIALS
 
@@ -616,15 +615,16 @@ Basics.nTrialsSession = Basics.nTrials/Basics.nSession; % number of trials per s
 Basics.nRunSession = Basics.nRun/Basics.nSession; % number of runs per session
 Basics.breakTrials = reshape(1:Basics.nTrialsRun:Basics.nTrials,Basics.nRunSession,Basics.nSession); % define break trials
 Basics.tRuns = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
-Basics.tStartTask = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
-Basics.tTrigger = nan(Basics.nRun,Basics.triggerSwitches); % initalize empty array to record run time
 
 % CREATE A TABLE WITH RUN INFO:
 Basics.runInfo = dataset;
 Basics.runInfo.session = reshape(repmat(1:Basics.nSession,Basics.nRunSession,1),Basics.nRun,1);
 Basics.runInfo.run = reshape(repmat(1:Basics.nRunSession,1,Basics.nSession),Basics.nRun,1);
 Basics.runInfo.tTrigger = nan(Basics.nRun,Basics.triggerSwitches); % initalize empty array to record run time
-Basics.runInfo.tTaskOnset = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
-Basics.runInfo.tRun = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
+Basics.runInfo.tRunStart = nan(Basics.nRun,1); % initalize empty array to record run time
+Basics.runInfo.tRunStop = nan(Basics.nRun,1); % initalize empty array to record run time
+Basics.runInfo.tRunTotal = nan(Basics.nRun,1); % initalize empty array to record run time
+
+Basics = orderfields(Basics); % orders all fields in the structure alphabetically
 
 end
