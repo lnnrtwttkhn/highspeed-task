@@ -1,10 +1,9 @@
-function [Sets,Data,Basics,Parameters,Sounds] = highspeed_settings
-%% HIGHSPEED MRI TASK
-% Lennart Wittkuhn, Independent Max Planck Research Group NeuroCode
+%% HIGHSPEED MRI TASK - SETTINGS FILE
+% Lennart Wittkuhn, Independent Max Planck Research Group NeuroCode, 2018
 % Max Planck Institute for Human Development, Berlin, Germany
 % Contact: wittkuhn@mpib-berlin.mpg.de
-% 2017 - 2018
 
+function [Sets,Data,Basics,Parameters,Sounds] = highspeed_settings
 %% DEFINE EXPERIMENTAL PARAMETERS:
 
 % DISPLAY TASK PROGRESS
@@ -17,7 +16,17 @@ Parameters.computerName = computer; % save information about computer
 Parameters.computerHost = char(getHostName(java.net.InetAddress.getLocalHost));
 Parameters.computerMatlab = ['R' version('-release')]; % save information about operating systemversion('-release')
 
+% SET ROOT PATHS DEPENDING ON THE COMPUTER
+if strcmp(Parameters.computerHost,'lip-osx-003854') % lennart's macbook
+    Parameters.pathRoot = fullfile('/Users','wittkuhn','Seafile'); % set root path
+elseif strcmp(Parameters.computerHost,'lip-osx-004174') % imac in neurocode office
+    Parameters.pathRoot = fullfile('/Users','Shared','Seafile'); % set root path
+elseif strcmp(Parameters.computerHost,'LIP-XP-165-167') % computer at the mpib mri center
+    Parameters.pathRoot = fullfile('D:','Dokumente und Einstellungen', 'guest','Desktop','NeuroCode_Lennart'); % set root path
+end
+
 % TRY TO ADD PSYCHTOOLBOX TO THE MATLAB SEARCH PATH
+Parameters.pathPsychtoolbox = fullfile(PsychtoolboxRoot); % set root path
 try
     Psychtoolboxversion
 catch ME
@@ -39,20 +48,6 @@ try
 catch
     warning('Reading from the scanner port was not successful!'); % display warning
 end
-fprintf('--------------------------------------------\n') % display task progress
-
-% SET ROOT PATHS
-if strcmp(Parameters.computerHost,'lip-osx-003854') % lennart's macbook
-    Parameters.pathRoot = fullfile('/Users','wittkuhn','Seafile'); % set root path
-    Parameters.pathPsychtoolbox = fullfile(PsychtoolboxRoot); % set root path
-elseif strcmp(Parameters.computerHost,'lip-osx-004174') % imac in neurocode office
-    Parameters.pathRoot = fullfile('/Users','Shared','Seafile'); % set root path
-    Parameters.pathPsychtoolbox = fullfile(PsychtoolboxRoot); % set root path
-elseif strcmp(Parameters.computerHost,'LIP-XP-165-167') % computer at the MPIB MRI center
-    Parameters.pathRoot = fullfile('D:','Dokumente und Einstellungen', 'guest',...
-        'Desktop','NeuroCode_Lennart','Seafile'); % set root path
-    Parameters.pathPsychtoolbox = fullfile(PsychtoolboxRoot); % set root path
-end
 
 % SET TASK PATHS
 Parameters.studyName = 'highspeed_task';
@@ -68,6 +63,7 @@ cd(Parameters.pathScripts) % set the current directory to the script folder
 Parameters.dirTask = dir(Parameters.pathTask); % get information about task directory
 Parameters.dirTask = {Parameters.dirTask.name}; % get folder names in the task directors
 if ~any(strcmp(Parameters.dirTask,'data')) % check whether data directory exists
+    fprintf('--------------------------------------------\n') % display task progress
     fprintf('Could not find the data directory. Will initalize a data directory now...\n') % display task progress
     mkdir(Parameters.pathTask,'data'); % create the data directory
     fprintf('Data directory was successfully initalized!\n') % display task progress
@@ -77,7 +73,7 @@ end
 
 % CALL KBQUEUE COMMANDS ONCE, TO AVOID CONFLICT WITH GETCHAR
 KbQueueCreate; % initalize response queue
-KbQueueStop; % stop queue
+KbQueueStop; % stop queue for now
 
 % DUMMY CALLS TO PSYCHTOOLBOX FUNCTIONS:
 KbCheck(-1); % dummy call to KbCheck
@@ -85,7 +81,6 @@ WaitSecs(0.1); % dummay call to WaitSecs
 GetSecs; clear ans; % dummy call to GetSecs
 
 % INITALIZE RANDOM NUMBER GENERATOR:
-% rng('default'); % reinitalize the random number generator to default
 rng(sum(100*clock)); % initalize random number generator
 
 % SCREEN SETTINGS:
@@ -112,9 +107,8 @@ pause(Sounds.soundWaitPlayer); % pause player immediately again
 if strcmp(Parameters.computerHost,'LIP-XP-165-167')
     Parameters.textSize = 25; % text size
 else
-     Parameters.textSize = 50; % text size
+    Parameters.textSize = 50; % text size
 end
-    
 Parameters.textFont = 'Helvetica'; % font type
 Parameters.textColorBlack = [0 0 0]; % rgb code for color black
 KbName('UnifyKeyNames'); % ensure cross-platform compatibility of keynaming
@@ -155,7 +149,7 @@ while true
     
     % USER INPUT: SELECT STUDY MODE:
     Parameters.studyOptions = {'instructions_condition_1','instructions_condition_2','practice','behavioral','mri'}; % study mode options
-    Parameters.guiSize = [250,70]; % size of the graphical user inteface (gui)
+    Parameters.guiSize = [200,100]; % size of the graphical user inteface (gui)
     [i,~] = listdlg('PromptString','Please choose the study mode:',...
         'SelectionMode','single','ListString',Parameters.studyOptions,'Name','Study mode','ListSize',Parameters.guiSize); % show gui
     Parameters.studyMode = Parameters.studyOptions{i}; % save selection of the study mode
@@ -277,7 +271,6 @@ elseif strcmp(Parameters.studyMode,'mri')
     Basics.scannerPort = 888; % scanner port
     Basics.triggerSwitches = 5; % number of TRs before the experiment starts
 end
-
 
 % GENERAL TASK PARAMETERS
 Basics.stimNames = transpose({'Gesicht','Haus','Katze','Schuh','Stuhl'}); % list of all stimulus names

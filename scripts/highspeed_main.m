@@ -1,4 +1,8 @@
-%% MAIN OF THE VISUAL OBJECT SEQUENCE TASK
+%% HIGHSPEED MRI TASK - MAIN FILE
+% Lennart Wittkuhn, Independent Max Planck Research Group NeuroCode, 2018
+% Max Planck Institute for Human Development, Berlin, Germany
+% Contact: wittkuhn@mpib-berlin.mpg.de
+
 function [Sets,Data,Basics,Parameters] = highspeed_main(Sets,Data,Basics,Parameters,Sounds)
 
 % DEFINE CONDITION INDICES
@@ -46,10 +50,18 @@ KbQueueStart(Parameters.deviceID); % starts queue
 % MAIN TASK LOOP
 for run = Parameters.subjectInfo.run:Basics.nRunSession
     
+    % START THE NEXT RUN OF THE EXPERIMENT:
+    fprintf('--------------------------------------------\n'); % display task progress
+    fprintf('Starting run %d of %d (current session)\n',run,Basics.nRunSession); % display task progress
+    trialStart = Basics.breakTrials(run,Parameters.subjectInfo.session); % first trial index of the current run
+    trialStop = trialStart + Basics.nTrialsRun - 1; % last trial index of the current run
+    fprintf('--------------------------------------------\n'); % display task progress
+    
     % MRI STUDY MODE: WAIT FOR MRI TRIGGER TO START THE NEXT RUN:
     if strcmp(Parameters.studyMode,'mri')
         DrawFormattedText(Parameters.window,'Bereit? \n\n Das Experiment startet in Kuerze!','center','center',Parameters.textColorBlack);
         VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
+        fprintf('Waiting for MRI scanner triggers...\n'); % display task progress
         try
             Basics.startState = inportb(Basics.scannerPort); % read from the scanner port
             oldState = Basics.startState; % save old trigger state in a separate variable
@@ -64,19 +76,13 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
                 end
                 oldState = newState; % update the old state
             end
-            Basics.runInfo.tRunStart(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run) = GetSecs; % start run start time
+            fprintf('MRI triggers were successfully recorded!\n'); % display task progress
         catch
             warning('MRI triggers are not working properly!') % display warning
         end
     end
     
-    % START THE NEXT RUN OF THE EXPERIMENT:
-    fprintf('--------------------------------------------\n'); % display task progress
-    fprintf('Starting run %d of %d (current session)\n',run,Basics.nRunSession); % display task progress
-    Basics.tRunStart = GetSecs; % save time of run start
-    
-    trialStart = Basics.breakTrials(run,Parameters.subjectInfo.session);
-    trialStop = trialStart + Basics.nTrialsRun - 1;
+    Basics.runInfo.tRunStart(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run) = GetSecs; % start run start time
     
     for trial = trialStart:trialStop
         
@@ -301,7 +307,9 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
         fprintf('--------------------------------------------\n') % display task progress
         fprintf('End run %d of %d (current session)\n',run,Basics.nRunSession) % display task progress
-        fprintf('Total run duration: %d minutes and %.f seconds\n',floor(Basics.tRunTotal/60),rem(Basics.tRunTotal,60)); % display run duration
+        fprintf('Total run duration: %d minutes and %.f seconds\n',...
+            floor(Basics.runInfo.tRunTotal(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run)/60),...
+            rem(Basics.runInfo.tRunTotal(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run),60)); % display run duration
         fprintf('Break. Saving data...\n'); % display current task status
     end
     
