@@ -1,4 +1,4 @@
-function [Sets,Data,Basics,Parameters,Sounds] = taskSettings
+function [Sets,Data,Basics,Parameters,Sounds] = highspeed_settings
 %% HIGHSPEED MRI TASK
 % Lennart Wittkuhn, Independent Max Planck Research Group NeuroCode
 % Max Planck Institute for Human Development, Berlin, Germany
@@ -204,7 +204,7 @@ while true
         end
         Parameters.dirDataSub = dir(fullfile(Parameters.pathData)); % get list of files in data directory
         Parameters.dirDataSub = {Parameters.dirDataSub.name}; % get cell array of files names in data directory
-        Parameters.prevData = fliplr(Parameters.dirDataSub(strcmp(Parameters.dirDataSub,pattern)));
+        Parameters.prevData = fliplr(Parameters.dirDataSub(~cellfun(@isempty,regexp(Parameters.dirDataSub,pattern))));
         if isempty(Parameters.prevData)
             if strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
                 Parameters.subjectInfo.cbal = str2double(inputdlg('cbal','Enter cbal',1)); % create and show dialog box
@@ -217,7 +217,7 @@ while true
             uiwait(f);
         elseif ~isempty(Parameters.prevData) && strcmp(Parameters.studyMode,'mri')
             while true
-                if regexp(Parameters.prevData,strcat('session', '_', num2str(Parameters.subjectInfo.session)))
+                if ~cellfun(@isempty,regexp(Parameters.prevData,strcat('session', '_', num2str(Parameters.subjectInfo.session)),'once'))
                     f = warndlg('Found data of the current session!','Warning!');
                     uiwait(f);
                 else
@@ -619,5 +619,12 @@ Basics.tRuns = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); %
 Basics.tStartTask = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
 Basics.tTrigger = nan(Basics.nRun,Basics.triggerSwitches); % initalize empty array to record run time
 
+% CREATE A TABLE WITH RUN INFO:
+Basics.runInfo = dataset;
+Basics.runInfo.session = reshape(repmat(1:Basics.nSession,Basics.nRunSession,1),Basics.nRun,1);
+Basics.runInfo.run = reshape(repmat(1:Basics.nRunSession,1,Basics.nSession),Basics.nRun,1);
+Basics.runInfo.tTrigger = nan(Basics.nRun,Basics.triggerSwitches); % initalize empty array to record run time
+Basics.runInfo.tTaskOnset = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
+Basics.runInfo.tRun = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
 
 end

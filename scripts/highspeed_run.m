@@ -5,6 +5,6 @@
 
 close all; clear variables; clc;
 
-[Sets,Data,Basics,Parameters,Sounds] = taskSettings;
+[Sets,Data,Basics,Parameters,Sounds] = highspeed_settings;
 
-[Sets,Data,Basics, Parameters] = main(Sets,Data,Basics,Parameters,Sounds);
+[Sets,Data,Basics,Parameters] = highspeed_main(Sets,Data,Basics,Parameters,Sounds);
