@@ -96,15 +96,17 @@ Parameters.screenCenterX = Parameters.screenSize(1)/2; % get center of x-axis
 Parameters.screenCenterY = Parameters.screenSize(2)/2; % get center of y-axis
 
 % LOAD SOUNDS:
+Sounds.soundWaitVolume = 4; % set the factor by which the volume of the wait sound should be increased
 [Sounds.soundCoinY,Sounds.soundCoinFs] = audioread(fullfile(Parameters.pathSounds,'soundCoin.wav')); % load reward sound
 [Sounds.soundErrorY,Sounds.soundErrorFs] = audioread(fullfile(Parameters.pathSounds,'soundError.wav')); % load error sound
 [Sounds.soundWaitY,Sounds.soundWaitFs] = audioread(fullfile(Parameters.pathSounds,'soundWait.wav')); % load wait sound
+Sounds.soundWaitY = Sounds.soundWaitY*Sounds.soundWaitVolume; % increase the volume of the wait sound
 Sounds.soundWaitPlayer = audioplayer(Sounds.soundWaitY,Sounds.soundWaitFs); % create audioplayer for wait sound
 play(Sounds.soundWaitPlayer); % start player once
 pause(Sounds.soundWaitPlayer); % pause player immediately again
 
 % SET TEXT AND KEY PARAMETERS:
-if strcmp(Parameters.computerHost,'LIP-XP-165-167')
+if strcmp(Parameters.computerHost,'LIP-XP-165-167') % mri center computer
     Parameters.textSize = 25; % text size
 else
     Parameters.textSize = 50; % text size
@@ -242,14 +244,13 @@ end
 
 % PRINT TASK SETTINGS TO COMMAND WINDOW:
 fprintf('--------------------------------------------\n')
-fprintf(1,'Study mode: %s\n',Parameters.studyMode);
-fprintf(1,'ID: %s\n',Parameters.subjectInfo.id);
-fprintf(1,'Gender: %s\n',Parameters.subjectInfo.gender);
-fprintf(1,'Session: %d\n',Parameters.subjectInfo.session);
-fprintf(1,'Run: %d\n',Parameters.subjectInfo.session);
-fprintf(1,'Cbal: %d\n',Parameters.subjectInfo.cbal);
+fprintf(1,'study mode: %s\n',Parameters.studyMode);
+fprintf(1,'id: %s\n',Parameters.subjectInfo.id);
+fprintf(1,'gender: %s\n',Parameters.subjectInfo.gender);
+fprintf(1,'session: %d\n',Parameters.subjectInfo.session);
+fprintf(1,'run: %d\n',Parameters.subjectInfo.session);
+fprintf(1,'cbal: %d\n',Parameters.subjectInfo.cbal);
 fprintf('--------------------------------------------\n')
-
 
 %% TASK BASICS
 
@@ -268,9 +269,11 @@ elseif strcmp(Parameters.studyMode,'behavioral')
 elseif strcmp(Parameters.studyMode,'mri')
     Basics.nSession = 2; % total number of sessions
     Basics.nRun = 8; % total number of runs
-    Basics.scannerPort = 888; % scanner port
-    Basics.triggerSwitches = 5; % number of TRs before the experiment starts
 end
+
+% MRI-RELATED PARAMETERS
+Basics.scannerPort = 888; % scanner port
+Basics.triggerSwitches = 5; % number of TRs before the experiment starts
 
 % GENERAL TASK PARAMETERS
 Basics.stimNames = transpose({'Gesicht','Haus','Katze','Schuh','Stuhl'}); % list of all stimulus names
@@ -284,6 +287,7 @@ Basics.tFixation = 0.300; % duration of fixation, in seconds
 Basics.tTargetCue = 0.5; % duration of target cue presentation, in seconds
 Basics.tMaxSeqTrial = 16; % duration of one sequence trial, in seconds
 Basics.tResponseLimit = 1.5; % response time limit, in seconds
+Basics.tWaitEndScreen = 3; % determines how long the end screen will be shown
 for i = 1:Basics.nStimCat % preload the task stimuli (pictures)
     currentStimulusName = Basics.stimNames{i}; % get the current stimulus name
     theImageLocation = fullfile(Parameters.pathStimuli,[currentStimulusName,'.jpg']);% create image path
@@ -428,10 +432,11 @@ Data(2).data.rt = nan(Sets(2).set.nTrials,1); % initalize empty array to record 
 % DRAW TARGET POSITIONS FROM POISSON DISTRIBUTION:
 Sets(2).set.distLamba = 1.9; % lamda parameteter of the poisson distribution
 Sets(2).set.distPoisson = poisspdf(1:Basics.nStimCat,Sets(2).set.distLamba) / sum(poisspdf(1:Basics.nStimCat,Sets(2).set.distLamba)); % create possion pdf
-Data(2).data.targetPos = nan(Sets(2).set.nTrials,1); % initalize
 if ~isempty(regexp(Parameters.studyMode,'instructions','once')) || strcmp(Parameters.studyMode,'practice')
     Sets(2).set.distNumValues = round(Sets(2).set.distPoisson * Sets(2).set.nTrials); % draw absolute number of respective target positons
+    Data(2).data.targetPos = transpose(Shuffle(cell2mat(arrayfun(@(x,y) repmat(x,1,y), Basics.nStimCat:-1:1,Sets(2).set.distNumValues,'uni',0)))); % define target positions
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
+    Data(2).data.targetPos = nan(Sets(2).set.nTrials,1); % initalize
     for i = 1:Sets(2).set.nISI
         idx = Sets(2).set.flashSelector(:,2) == i; % find flash sequences
         Sets(2).set.distNumValues = round(Sets(2).set.distPoisson * Sets(2).set.nSeq); % draw absolute number of respective target positons
@@ -607,7 +612,6 @@ Basics.nTrialsRun = Basics.nTrials/Basics.nRun; % number of trials per run
 Basics.nTrialsSession = Basics.nTrials/Basics.nSession; % number of trials per session
 Basics.nRunSession = Basics.nRun/Basics.nSession; % number of runs per session
 Basics.breakTrials = reshape(1:Basics.nTrialsRun:Basics.nTrials,Basics.nRunSession,Basics.nSession); % define break trials
-Basics.tRuns = reshape(nan(1,Basics.nRun),Basics.nRunSession,Basics.nSession); % initalize empty array to record run time
 
 % CREATE A TABLE WITH RUN INFO:
 Basics.runInfo = dataset;

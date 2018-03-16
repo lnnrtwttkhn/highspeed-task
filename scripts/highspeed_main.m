@@ -34,7 +34,12 @@ Parameters.flipInterval = Screen('GetFlipInterval', Parameters.window); % get th
 
 % START SCREEN: WELCOME PARTICIPANTS TO THE EXPERIMENT
 DrawFormattedText(Parameters.window,'Willkommen zur Aufgabe "Visuelle Objekte Erkennen"!','center','center',Parameters.textColorBlack);
-DrawFormattedText(Parameters.window, 'Start mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
+if strcmp(Parameters.studyMode,'mri')
+    DrawFormattedText(Parameters.window, 'Bitte warten Sie auf die Versuchsleitung.','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
+else
+    DrawFormattedText(Parameters.window, 'Start mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
+end
+Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
 Screen('Flip',Parameters.window); % flip to the screen
 VBLTime = KbPressWait(Parameters.deviceID); % save key press time
 waitSecs = 0; % define stimulus duration
@@ -59,7 +64,8 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
     
     % MRI STUDY MODE: WAIT FOR MRI TRIGGER TO START THE NEXT RUN:
     if strcmp(Parameters.studyMode,'mri')
-        DrawFormattedText(Parameters.window,'Bereit? \n\n Das Experiment startet in Kuerze!','center','center',Parameters.textColorBlack);
+        DrawFormattedText(Parameters.window,'Bereit? Das Experiment startet gleich nach dem Countdown!','center','center',Parameters.textColorBlack);
+        Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
         VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
         fprintf('Waiting for MRI scanner triggers...\n'); % display task progress
         try
@@ -72,6 +78,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
                     triggerCounter = triggerCounter + 1; % update the trigger counter
                     Basics.runInfo.tTrigger(Basics.runInfo.session == Parameters.subjectInfo.session & Basics.runInfo.run == run,triggerCounter) = GetSecs;
                     DrawFormattedText(Parameters.window,num2str(Basics.triggerSwitches-triggerCounter),'center','center',Parameters.textColorBlack);
+                    Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
                     VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
                 end
                 oldState = newState; % update the old state
@@ -162,7 +169,7 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
                     % START TO SHOW ISI (BLANK SCREEN) IF STIMULUS PRESENTATION TIME HAS ELAPSED:
                     % Check if the time of stimulus duration has elapsed since stimulus onset and if the ITI (blank screen) has not been flipped yet
                     if GetSecs >= Data(cond).data.tFlipStim(dataIndex) + Sets(cond).set.tStim - 0.5 * Parameters.flipInterval && isnan(Data(cond).data.tFlipITI(dataIndex))
-                        Screen('DrawDots',Parameters.window,[Parameters.screenCenterX,Parameters.screenCenterY],Basics.dotSize,Basics.dotColor,[],Basics.dotType); % draw dot
+%                         Screen('DrawDots',Parameters.window,[Parameters.screenCenterX,Parameters.screenCenterY],Basics.dotSize,Basics.dotColor,[],Basics.dotType); % draw dot
                         VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
                         Data(cond).data.tFlipITI(dataIndex) = VBLTime; % save flip time
                         waitSecs = Data(cond).data.tITI(dataIndex); % define wait time
@@ -302,7 +309,11 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         DrawFormattedText(Parameters.window,sprintf('Sie haben Durchgang %d von %d geschafft.',run,Basics.nRunSession),'center',Parameters.textSize * 3,Parameters.textColorBlack);
         str = sprintf('Sie haben bisher %.2f Euro verdient!',Basics.totalWinAll);
         DrawFormattedText(Parameters.window,str,'center','center',Parameters.textColorBlack);
-        DrawFormattedText(Parameters.window, 'Weiter mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
+        if strcmp(Parameters.studyMode,'mri')
+            DrawFormattedText(Parameters.window, 'Sie koennen sich jetzt ausruhen.','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
+        else
+            DrawFormattedText(Parameters.window, 'Weiter mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
+        end
         Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
         VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen
         fprintf('--------------------------------------------\n') % display task progress
@@ -345,10 +356,10 @@ DrawFormattedText(Parameters.window,str,'center','center',Parameters.textColorBl
 DrawFormattedText(Parameters.window, 'Bitte wenden Sie sich an die Versuchsleitung.','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
 Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
 Screen('Flip',Parameters.window); % flip to the screen
-Basics.tExperimentTotal = nansum(Basics.tRuns(:,Parameters.subjectInfo.session)); % calculate total experiment time
-WaitSecs(3); % wait for task to end
+Basics.tExperimentTotal = nansum(Basics.runInfo.tRunTotal(Basics.runInfo.session == Parameters.subjectInfo.session)); % calculate total experiment time
+WaitSecs(Basics.tWaitEndScreen); % wait for task to end
 fprintf('--------------------------------------------\n') % display task progress
-fprintf('End of the experiment\n'); % display current task status
+fprintf('End of the experiment:\n'); % display current task status
 fprintf('Total experiment duration: %d minutes and %.f seconds\n',floor(Basics.tExperimentTotal/60),rem(Basics.tExperimentTotal,60));
 fprintf('Total reward: %.2f Euro\n',Basics.totalWinAll); % display current task status
 fprintf('--------------------------------------------\n') % display task progress
