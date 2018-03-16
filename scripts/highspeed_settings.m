@@ -232,6 +232,7 @@ while true
                 choice = questdlg([{'Do you really want to load this data file?'};{''};pattern],'Continue?','Cancel','OK','OK'); % check inputs by user
                 if strcmp(choice,'OK')
                     load(fullfile(Parameters.pathData,pattern),'Data','Sets','Basics') % load the previous data file
+                    fprintf('--------------------------------------------\n') % display task progress
                     fprintf('Previous data file was successfully loaded: %s\n',pattern) % display task progress
                     break
                 else
