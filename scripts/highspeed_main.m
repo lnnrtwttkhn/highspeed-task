@@ -20,6 +20,10 @@ set(0,'DefaultFigureWindowStyle','normal');
 Screen('Preference','TextEncodingLocale','UTF-8'); % set text encoding preference to UTF-8
 Screen('Preference', 'TextRenderer', 0);
 
+% OPEN AND CLOSE TEST WINDOW (TO ALLOW FOR WINDOWS SCREEN COLOR ADJUSTMENT)
+Parameters.window = Screen('OpenWindow', Parameters.screenID); % open screen
+Screen('CloseAll'); % close screen
+
 % OPEN WINDOW
 Parameters.window = Screen('OpenWindow', Parameters.screenID); % open screen
 Priority(MaxPriority(Parameters.window)); % raise Matlab to realtime-priority mode to get the highest suitable priority
