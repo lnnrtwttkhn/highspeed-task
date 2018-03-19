@@ -23,6 +23,8 @@ elseif strcmp(Parameters.computerHost,'lip-osx-004174') % imac in neurocode offi
     Parameters.pathRoot = fullfile('/Users','Shared','Seafile'); % set root path
 elseif strcmp(Parameters.computerHost,'LIP-XP-165-167') % computer at the mpib mri center
     Parameters.pathRoot = fullfile('D:','Dokumente und Einstellungen', 'guest','Desktop','NeuroCode_Lennart'); % set root path
+elseif strcmp(Parameters.computerHost,'NRCD-W7-472062') % windows computer in neurocode testing room 305
+    Parameters.pathRoot = fullfile('D:','NeuroCode_Lennart','Seafile'); % set root path
 end
 
 % TRY TO ADD PSYCHTOOLBOX TO THE MATLAB SEARCH PATH
