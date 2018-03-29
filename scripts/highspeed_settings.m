@@ -287,7 +287,7 @@ Basics.dotColor = [105 105 105]; % define the color of the dot as rgb code
 Basics.reward = 0.03; % reward in cents for each correct response
 Basics.tPreFixation = 3.850; % duration of blank screen before fixation, in seconds
 Basics.tFixation = 0.300; % duration of fixation, in seconds
-Basics.tTargetCue = 0.5; % duration of target cue presentation, in seconds
+Basics.tTargetCue = 1.0; % duration of target cue presentation, in seconds
 Basics.tMaxSeqTrial = 16; % duration of one sequence trial, in seconds
 Basics.tResponseLimit = 1.5; % response time limit, in seconds
 Basics.tWaitEndScreen = 3; % determines how long the end screen will be shown
@@ -302,7 +302,7 @@ end
 % STUDYMODE-SPECIFIC PARAMETERS:
 if ~isempty(regexp(Parameters.studyMode,'instructions','once')) || strcmp(Parameters.studyMode,'practice')
   Sets(1).set.nSeq = 5; % number of unique category combinations / number of training trials
-  Sets(1).set.sequences = datasample(perms(1:Basics.nStimCat),Sets(1).set.nSeq,'Replace',false);
+  Sets(1).set.sequences = datasample(perms(1:Basics.nStimCat),Sets(1).set.nSeq,'Replace',false); % randomly pick sequences of stimuli
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
   Sets(1).set.nSeq = factorial(Basics.nStimCat); % number of unique category combinations / number of training trials
   Sets(1).set.sequences = transpose(Shuffle(transpose(perms(1:Basics.nStimCat)))); % create a matrix with all possible sequences sand randomly shuffle the order
@@ -312,18 +312,17 @@ end
 Sets(1).set.trialName = 'oddball'; % name of the trial type
 Sets(1).set.nSeqStim = Basics.nStimCat; % length of a training sequence (i.e., number of elements)
 Sets(1).set.nTrials = Sets(1).set.nSeq * Basics.nStimCat; % total number of stimuli presentations (to have every category in every combination)
+Sets(1).set.nTrialsPerRun = Sets(1).set.nTrials/Basics.nRun; % total number of trials per run
 Sets(1).set.tStim = 0.5; % duration of stimulus presentation, in seconds
 Sets(1).set.tMeanITI = 1.5; % mean inter-trial interval (ITI), in seconds
 Sets(1).set.distLowerLim = 1; % lower limit of the ITI exponential distribution
-% Sets(1).set.distUpperLim = inf; % lower limit of the ITI exponential distribution
-% Sets(1).set.distTruncExp = makedist('Exponential','mu',Sets(1).set.tMeanITI); % create exponential distribution with mean = meanITI
-% Sets(1).set.distTruncExp = truncate(Sets(1).set.distTruncExp,Sets(1).set.distLowerLim,Sets(1).set.distUpperLim); % truncate at 1 sec (lower limit), upper limit is inf
-
+Sets(1).set.distUpperLim = 3; % upper limit of the ITI exponential distribution
 Sets(1).set.ratioTarget = 0.2; % 20% of all trials are upside-down trials
 Sets(1).set.nTargetPerCat = Sets(1).set.nSeq * Sets(1).set.ratioTarget; % number of upside down trials per category
 Sets(1).set.dataIndices = transpose(reshape(1:Sets(1).set.nTrials,Sets(1).set.nSeqStim,Sets(1).set.nSeq)); % create matrix to index the response data matrix
 Sets(1).set.tTrial = Basics.tPreFixation + (Basics.tFixation + Sets(1).set.tStim + Sets(1).set.tMeanITI) * Basics.nStimCat; % duration of one training trial, in seconds
 Sets(1).set.tCond = Sets(1).set.tTrial * Sets(1).set.nSeq / 60; % duration of all training trials, in minutes
+Sets(1).set.tCondPerRun = Sets(1).set.tTrial * Sets(1).set.nSeq / Basics.nRun; % average expected duration of condition per run
 Sets(1).set = orderfields(Sets(1).set); % orders all fields in the structure alphabetically
 
 % CREATE DATA TABLE
@@ -336,17 +335,46 @@ Data(1).data.stimIndex = reshape(transpose(Sets(1).set.sequences),[Sets(1).set.n
 Data(1).data.targetName = Basics.stimNames(Data(1).data.stimIndex); % get the stimulus name for each trial
 Data(1).data.orient = zeros(Sets(1).set.nTrials,1); % initalize array for random stimulus orientation (0 (= upright presentation) as default)
 for k = 1:Basics.nStimCat % determine the (random) occurences of oddballs (equal number of oddballs for each stimulus)
-    Data(1).data.orient(datasample(find(Data(1).data.stimIndex == k),Sets(1).set.nTargetPerCat,'Replace',false)) = 180; % set stimulus orientation to 180 (degree)
+     Data(1).data.orient(datasample(find(Data(1).data.stimIndex == k),Sets(1).set.nTargetPerCat,'Replace',false)) = 180; % set stimulus orientation to 180 (degree)
 end
 
-% Data(1).data.tITI = random(Sets(1).set.distTruncExp,Sets(1).set.nTrials,1); % generate random ITIs for every trial drawn from the truncated exponential distribution
 % SAMPLE ITIs FROM EXPONENTIAL DISTRIBUTION (MATLAB 2012 VERSION WORKAROUND)
 Data(1).data.tITI = nan(Sets(1).set.nTrials,1); % initalize
 for i = 1:Sets(1).set.nTrials
     while isnan(Data(1).data.tITI(i)) || Data(1).data.tITI(i) < Sets(1).set.distLowerLim
-        Data(1).data.tITI(i) = exprnd(Sets(1).set.tMeanITI);
+        Data(1).data.tITI(i) = exprnd(Sets(1).set.tMeanITI); % draw random iti from exponetial distribution
     end
 end
+% 
+% % NORMALIZE
+% normalizeFactor = 200;
+% index = reshape(1:Sets(1).set.nTrials,Sets(1).set.nTrialsPerRun,Basics.nRun);
+% for run = 1:Basics.nRun
+%     Data(1).data.tITI(index(:,run)) = Data(1).data.tITI(index(:,run))/sum(Data(1).data.tITI(index(:,run)))*normalizeFactor;
+% end
+% min(Data(1).data.tITI)
+% max((Data(1).data.tITI))
+% 
+% % ALTERNATIVE 2: WITH UPPER BOUNDARY
+% Data(1).data.tITI = nan(Sets(1).set.nTrials,1); % initalize
+% for i = 1:Sets(1).set.nTrials
+%     while isnan(Data(1).data.tITI(i)) || Data(1).data.tITI(i) < Sets(1).set.distLowerLim || Data(1).data.tITI(i) > Sets(1).set.distUpperLim
+%         Data(1).data.tITI(i) = exprnd(Sets(1).set.tMeanITI); % draw random iti from exponetial distribution
+%     end
+% end
+% 
+% % TEST THE DISTRIBUTION
+% index = reshape(1:600,600/Basics.nRun,Basics.nRun);
+% for run = 1:Basics.nRun
+%     sumArray(run) = sum(Data(1).data.tITI(index(:,run)));
+%     meanArray(run) = mean(Data(1).data.tITI(index(:,run)));
+% end
+% histogram(Data(1).data.tITI)
+% min(Data(1).data.tITI)
+% max(Data(1).data.tITI)
+% sumArray
+% meanArray
+% abs(min(sumArray)-max(sumArray))
 
 % INITIALIZE EMPTY ARRAYS TO RECORD RESPONSES AND STIMULUS TIMINGS:
 Data(1).data.keyIsDown = nan(Sets(1).set.nTrials,1); % initalize empty array to save whether key was down or not for every trial
@@ -618,6 +646,7 @@ Basics.breakTrials = reshape(1:Basics.nTrialsRun:Basics.nTrials,Basics.nRunSessi
 
 % CREATE A TABLE WITH RUN INFO:
 Basics.runInfo = dataset;
+Basics.runInfo.id = repmat({Parameters.subjectInfo.id},Basics.nRun,1); % add id
 Basics.runInfo.session = reshape(repmat(1:Basics.nSession,Basics.nRunSession,1),Basics.nRun,1);
 Basics.runInfo.run = reshape(repmat(1:Basics.nRunSession,1,Basics.nSession),Basics.nRun,1);
 Basics.runInfo.tTrigger = nan(Basics.nRun,Basics.triggerSwitches); % initalize empty array to record run time
