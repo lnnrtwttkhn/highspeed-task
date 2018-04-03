@@ -98,7 +98,7 @@ Parameters.screenCenterX = Parameters.screenSize(1)/2; % get center of x-axis
 Parameters.screenCenterY = Parameters.screenSize(2)/2; % get center of y-axis
 
 % LOAD SOUNDS:
-Sounds.soundWaitVolume = 4; % set the factor by which the volume of the wait sound should be increased
+Sounds.soundWaitVolume = 2.5; % set the factor by which the volume of the wait sound should be increased
 [Sounds.soundCoinY,Sounds.soundCoinFs] = audioread(fullfile(Parameters.pathSounds,'soundCoin.wav')); % load reward sound
 [Sounds.soundErrorY,Sounds.soundErrorFs] = audioread(fullfile(Parameters.pathSounds,'soundError.wav')); % load error sound
 [Sounds.soundWaitY,Sounds.soundWaitFs] = audioread(fullfile(Parameters.pathSounds,'soundWait.wav')); % load wait sound
@@ -109,7 +109,7 @@ pause(Sounds.soundWaitPlayer); % pause player immediately again
 
 % SET TEXT AND KEY PARAMETERS:
 if strcmp(Parameters.computerHost,'LIP-XP-165-167') % mri center computer
-    Parameters.textSize = 25; % text size
+    Parameters.textSize = 30; % text size
 else
     Parameters.textSize = 50; % text size
 end
@@ -160,7 +160,7 @@ while true
     
     % ENTER PARTICIPANT DETAILS:
     prompt = {'id','age','gender','session','run'}; % define the prompts
-    defaultAns = {'99999','99999','m/f','1/2','1'}; % define the default answers
+    defaultAns = {'99999','99999','m/f/o','1/2','1'}; % define the default answers
     Parameters.subjectInfo = inputdlg(prompt,'Subject Info',1,defaultAns); % create and show dialog box
     if isempty(Parameters.subjectInfo) % if cancel was pressed
         f = msgbox('Process aborted: Please start again!','Error','error'); % show error message
@@ -174,8 +174,8 @@ while true
     if numel(Parameters.subjectInfo.id) ~= 5 % if ID has not been correctly specified
         f = msgbox('ID must contain 5 digits!','Error','error');
         uiwait(f);
-    elseif ~strcmp(Parameters.subjectInfo.gender,'m') && ~strcmp(Parameters.subjectInfo.gender,'f')
-        f = msgbox('Gender must be either m or f','Error','error');
+    elseif ~strcmp(Parameters.subjectInfo.gender,'m') && ~strcmp(Parameters.subjectInfo.gender,'f') && ~strcmp(Parameters.subjectInfo.gender,'o')
+        f = msgbox('Gender must be either m, f or o','Error','error');
         uiwait(f);
     elseif str2double(Parameters.subjectInfo.session) ~= 1 && str2double(Parameters.subjectInfo.session) ~= 2
         f = msgbox('Session must be either 1 or 2','Error','error');
@@ -305,7 +305,8 @@ if ~isempty(regexp(Parameters.studyMode,'instructions','once')) || strcmp(Parame
   Sets(1).set.sequences = datasample(perms(1:Basics.nStimCat),Sets(1).set.nSeq,'Replace',false); % randomly pick sequences of stimuli
 elseif strcmp(Parameters.studyMode,'behavioral') || strcmp(Parameters.studyMode,'mri')
   Sets(1).set.nSeq = factorial(Basics.nStimCat); % number of unique category combinations / number of training trials
-  Sets(1).set.sequences = transpose(Shuffle(transpose(perms(1:Basics.nStimCat)))); % create a matrix with all possible sequences sand randomly shuffle the order
+  Sets(1).set.sequences = perms(1:Basics.nStimCat); % create a matrix with all possible sequences ... 
+  Sets(1).set.sequences = Sets(1).set.sequences(randperm(size(Sets(1).set.sequences,1)),:); % ... and randomly shuffle the order
 end
 
 % GENERAL CONDITION PARAMETERS:
@@ -315,14 +316,16 @@ Sets(1).set.nTrials = Sets(1).set.nSeq * Basics.nStimCat; % total number of stim
 Sets(1).set.nTrialsPerRun = Sets(1).set.nTrials/Basics.nRun; % total number of trials per run
 Sets(1).set.tStim = 0.5; % duration of stimulus presentation, in seconds
 Sets(1).set.tMeanITI = 1.5; % mean inter-trial interval (ITI), in seconds
-Sets(1).set.distLowerLim = 1; % lower limit of the ITI exponential distribution
-Sets(1).set.distUpperLim = 3; % upper limit of the ITI exponential distribution
+Sets(1).set.tMeanITI = 1.5; % mean inter-trial interval (ITI), in seconds
+Sets(1).set.tTotalITI = 2.5; % total ITI duration across the entire experiment, in seconds
+Sets(1).set.tTotalITIPerRun = Sets(1).set.tTotalITI * Sets(1).set.nTrials * Basics.nRun; % total ITI duration per run, in seconds
+Sets(1).set.distLowerLim = 1.5; % lower limit of the ITI exponential distribution
 Sets(1).set.ratioTarget = 0.2; % 20% of all trials are upside-down trials
 Sets(1).set.nTargetPerCat = Sets(1).set.nSeq * Sets(1).set.ratioTarget; % number of upside down trials per category
 Sets(1).set.dataIndices = transpose(reshape(1:Sets(1).set.nTrials,Sets(1).set.nSeqStim,Sets(1).set.nSeq)); % create matrix to index the response data matrix
-Sets(1).set.tTrial = Basics.tPreFixation + (Basics.tFixation + Sets(1).set.tStim + Sets(1).set.tMeanITI) * Basics.nStimCat; % duration of one training trial, in seconds
+Sets(1).set.tTrial = Basics.tPreFixation + (Basics.tFixation + Sets(1).set.tStim + Sets(1).set.tTotalITIPerRun/Sets(1).set.nTrialsPerRun) * Basics.nStimCat; % duration of one training trial, in seconds
 Sets(1).set.tCond = Sets(1).set.tTrial * Sets(1).set.nSeq / 60; % duration of all training trials, in minutes
-Sets(1).set.tCondPerRun = Sets(1).set.tTrial * Sets(1).set.nSeq / Basics.nRun; % average expected duration of condition per run
+Sets(1).set.tCondPerRun = Sets(1).set.tCond / Basics.nRun; % average expected duration of condition per run
 Sets(1).set = orderfields(Sets(1).set); % orders all fields in the structure alphabetically
 
 % CREATE DATA TABLE
@@ -339,31 +342,23 @@ for k = 1:Basics.nStimCat % determine the (random) occurences of oddballs (equal
 end
 
 % SAMPLE ITIs FROM EXPONENTIAL DISTRIBUTION (MATLAB 2012 VERSION WORKAROUND)
-Data(1).data.tITI = nan(Sets(1).set.nTrials,1); % initalize
-for i = 1:Sets(1).set.nTrials
-    while isnan(Data(1).data.tITI(i)) || Data(1).data.tITI(i) < Sets(1).set.distLowerLim
-        Data(1).data.tITI(i) = exprnd(Sets(1).set.tMeanITI); % draw random iti from exponetial distribution
-    end
-end
-% 
-% % NORMALIZE
-% normalizeFactor = 200;
-% index = reshape(1:Sets(1).set.nTrials,Sets(1).set.nTrialsPerRun,Basics.nRun);
-% for run = 1:Basics.nRun
-%     Data(1).data.tITI(index(:,run)) = Data(1).data.tITI(index(:,run))/sum(Data(1).data.tITI(index(:,run)))*normalizeFactor;
-% end
-% min(Data(1).data.tITI)
-% max((Data(1).data.tITI))
-% 
-% % ALTERNATIVE 2: WITH UPPER BOUNDARY
 % Data(1).data.tITI = nan(Sets(1).set.nTrials,1); % initalize
 % for i = 1:Sets(1).set.nTrials
-%     while isnan(Data(1).data.tITI(i)) || Data(1).data.tITI(i) < Sets(1).set.distLowerLim || Data(1).data.tITI(i) > Sets(1).set.distUpperLim
-%         Data(1).data.tITI(i) = exprnd(Sets(1).set.tMeanITI); % draw random iti from exponetial distribution
+%     while isnan(Data(1).data.tITI(i)) || Data(1).data.tITI(i) < Sets(1).set.distLowerLim
+%         Data(1).data.tITI(i) = exprnd(Sets(1).set.tMeanITI);
 %     end
 % end
-% 
-% % TEST THE DISTRIBUTION
+
+% NEW SOLUTUON WITH FIXED RUN DURATION
+index = reshape(1:Sets(1).set.nTrials,Sets(1).set.nTrialsPerRun,Basics.nRun);
+Data(1).data.tITI = nan(Sets(1).set.nTrials,1); % initalize
+for run = 1:Basics.nRun
+    Data(1).data.tITI(index(:,run)) = exprnd(Sets(1).set.tMeanITI,1,Sets(1).set.nTrialsPerRun) + Sets(1).set.distLowerLim; % draw from exponential distribution
+    Data(1).data.tITI(index(:,run)) = Data(1).data.tITI(index(:,run))/sum(Data(1).data.tITI(index(:,run))); % normalized
+    Data(1).data.tITI(index(:,run)) = Data(1).data.tITI(index(:,run)) * Sets(1).set.tTotalITIPerRun; % multiply by duration of run ITIs
+end
+
+% TEST THE DISTRIBUTION
 % index = reshape(1:600,600/Basics.nRun,Basics.nRun);
 % for run = 1:Basics.nRun
 %     sumArray(run) = sum(Data(1).data.tITI(index(:,run)));
@@ -372,9 +367,9 @@ end
 % histogram(Data(1).data.tITI)
 % min(Data(1).data.tITI)
 % max(Data(1).data.tITI)
-% sumArray
-% meanArray
-% abs(min(sumArray)-max(sumArray))
+% sumArray % sum duration of all itis
+% meanArray % mean it of every run
+% abs(min(sumArray)-max(sumArray)) % maximum time difference between runs
 
 % INITIALIZE EMPTY ARRAYS TO RECORD RESPONSES AND STIMULUS TIMINGS:
 Data(1).data.keyIsDown = nan(Sets(1).set.nTrials,1); % initalize empty array to save whether key was down or not for every trial
@@ -406,6 +401,7 @@ Sets(2).set.nISI = numel(Sets(2).set.tISI); % number of ISIs
 Sets(2).set.nTrials = Sets(2).set.nSeq * Sets(2).set.nISI; % total number of flash trials
 Sets(2).set.tTrial = Basics.tTargetCue + Basics.tPreFixation + Basics.tFixation + Basics.tMaxSeqTrial + Basics.tResponseLimit; % duration of one flash trial
 Sets(2).set.tCond =  Sets(2).set.tTrial * Sets(2).set.nTrials / 60; % duration of test phase, in minutes
+Sets(2).set.tCondPerRun = Sets(2).set.tCond / Basics.nRun; % average expected duration of condition per run
 Sets(2).set.distLowerLim = 1; % lower limit of distribution
 Sets(2).set.distUpperLim = 5; % upper limit of distribution
 Sets(2).set.dataIndices = repmat(transpose(1:Sets(2).set.nTrials),1,Sets(2).set.nSeqStim); % create matrix to index the response data matrix
@@ -499,6 +495,10 @@ Data(2).data.tFlipResp = nan(Sets(2).set.nTrials,1); % initalize empty array to 
 Data(2).data.tResponse = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
 Sets(2).set = orderfields(Sets(2).set); % orders all fields in the structure alphabetically
 
+A = Sets(1).set.sequences;
+B = unique(Sets(2).set.sequences,'rows');
+find(ismember(A,B,'rows'))
+
 %% REPETITION TRIALS (SHORT) 
 
 % GENERAL CONDITION PARAMETERS:
@@ -513,8 +513,9 @@ Sets(3).set.distLowerLimit = 1; % lower limit of distribution for response targe
 Sets(3).set.distUpperLimit = Sets(3).set.nSeqStim; % upper limit of distribution for response targets
 Sets(3).set.respDiff = 3;
 Sets(3).set.dataIndices = repmat(transpose(1:Sets(3).set.nTrials),1,Sets(3).set.nSeqStim); % matrix with indices to write in data file
-Sets(3).set.tOneTwoTrial = Basics.tTargetCue + Basics.tPreFixation + Basics.tFixation + Basics.tMaxSeqTrial + Basics.tResponseLimit;
-Sets(3).set.tCond = Sets(3).set.tOneTwoTrial * Sets(3).set.nTrials / 60; % duration of one two phase, in minutes
+Sets(3).set.tTrial = Basics.tTargetCue + Basics.tPreFixation + Basics.tFixation + Basics.tMaxSeqTrial + Basics.tResponseLimit;
+Sets(3).set.tCond = Sets(3).set.tTrial * Sets(3).set.nTrials / 60; % duration of one two phase, in minutes
+Sets(3).set.tCondPerRun = Sets(3).set.tCond / Basics.nRun; % average expected duration of condition per run
 
 % CREATE SEQUENCES:
 Sets(3).set.sequences = []; % initalize empty matrix
@@ -583,6 +584,7 @@ Sets(4).set.tISI = min(Sets(2).set.tISI); % ISI of one-two sequences, in seconds
 Sets(4).set.dataIndices = repmat(transpose(1:Sets(4).set.nSeq),1,Sets(4).set.nSeqStim);
 Sets(4).set.tTrial = Basics.tTargetCue + Basics.tPreFixation + Basics.tFixation + Basics.tMaxSeqTrial + Basics.tResponseLimit; % duration of one flash trial
 Sets(4).set.tCond = Sets(4).set.tTrial * Sets(4).set.nTrials / 60; % duration of one two phase, in minutes
+Sets(4).set.tCondPerRun = Sets(4).set.tCond / Basics.nRun; % average expected duration of condition per run
 
 % CREATE SEQUENCES:
 Sets(4).set.sequences = repmat(transpose(1:Basics.nStimCat),Sets(4).set.nRep,Sets(4).set.nSeqStim); % create sequences of extra oneTwo Trials
