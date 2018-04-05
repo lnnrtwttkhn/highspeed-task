@@ -39,9 +39,9 @@ Parameters.flipInterval = Screen('GetFlipInterval', Parameters.window); % get th
 % START SCREEN: WELCOME PARTICIPANTS TO THE EXPERIMENT
 DrawFormattedText(Parameters.window,'Willkommen zur Aufgabe "Visuelle Objekte Erkennen"!','center','center',Parameters.textColorBlack);
 if strcmp(Parameters.studyMode,'mri')
-    DrawFormattedText(Parameters.window, 'Bitte warten Sie auf die Versuchsleitung.','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
+    DrawFormattedText(Parameters.window, 'Bitte warten Sie auf die Versuchsleitung.','center',Parameters.screenSize(2) - Parameters.textSize * 2,Parameters.textColorBlack);
 else
-    DrawFormattedText(Parameters.window, 'Start mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
+    DrawFormattedText(Parameters.window, 'Start mit beliebiger Pfeiltaste','center',Parameters.screenSize(2) - Parameters.textSize * 2,Parameters.textColorBlack);
 end
 Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
 Screen('Flip',Parameters.window); % flip to the screen
@@ -314,9 +314,9 @@ for run = Parameters.subjectInfo.run:Basics.nRunSession
         str = sprintf('Sie haben bisher %.2f Euro verdient!',Basics.totalWinAll);
         DrawFormattedText(Parameters.window,str,'center','center',Parameters.textColorBlack);
         if strcmp(Parameters.studyMode,'mri')
-            DrawFormattedText(Parameters.window, 'Sie koennen sich jetzt ausruhen.','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
+            DrawFormattedText(Parameters.window, 'Sie koennen sich jetzt ausruhen.','center',Parameters.screenSize(2)-Parameters.textSize * 2,Parameters.textColorBlack);
         else
-            DrawFormattedText(Parameters.window, 'Weiter mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize,Parameters.textColorBlack);
+            DrawFormattedText(Parameters.window, 'Weiter mit beliebiger Pfeiltaste','center',Parameters.screenSize(2)-Parameters.textSize * 2,Parameters.textColorBlack);
         end
         Screen('DrawingFinished', Parameters.window); % tell PTB that stimulus drawing for this frame is finished
         VBLTime = Screen('Flip',Parameters.window,VBLTime + waitSecs - 0.5 * Parameters.flipInterval); % flip to the screen

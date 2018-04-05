@@ -315,15 +315,14 @@ Sets(1).set.nSeqStim = Basics.nStimCat; % length of a training sequence (i.e., n
 Sets(1).set.nTrials = Sets(1).set.nSeq * Basics.nStimCat; % total number of stimuli presentations (to have every category in every combination)
 Sets(1).set.nTrialsPerRun = Sets(1).set.nTrials/Basics.nRun; % total number of trials per run
 Sets(1).set.tStim = 0.5; % duration of stimulus presentation, in seconds
-Sets(1).set.tMeanITI = 1.5; % mean inter-trial interval (ITI), in seconds
-Sets(1).set.tMeanITI = 1.5; % mean inter-trial interval (ITI), in seconds
-Sets(1).set.tTotalITI = 2.5; % total ITI duration across the entire experiment, in seconds
-Sets(1).set.tTotalITIPerRun = Sets(1).set.tTotalITI * Sets(1).set.nTrials * Basics.nRun; % total ITI duration per run, in seconds
+Sets(1).set.tMeanITI = 1.5; % mean of the exponential distribution, in seconds
+Sets(1).set.tTotalITI = 2.5; % total mean ITI duration across the entire experiment, in seconds
+Sets(1).set.tTotalITIPerRun = Sets(1).set.tTotalITI * Sets(1).set.nTrials / Basics.nRun; % total ITI duration per run, in minutes
 Sets(1).set.distLowerLim = 1.5; % lower limit of the ITI exponential distribution
 Sets(1).set.ratioTarget = 0.2; % 20% of all trials are upside-down trials
 Sets(1).set.nTargetPerCat = Sets(1).set.nSeq * Sets(1).set.ratioTarget; % number of upside down trials per category
 Sets(1).set.dataIndices = transpose(reshape(1:Sets(1).set.nTrials,Sets(1).set.nSeqStim,Sets(1).set.nSeq)); % create matrix to index the response data matrix
-Sets(1).set.tTrial = Basics.tPreFixation + (Basics.tFixation + Sets(1).set.tStim + Sets(1).set.tTotalITIPerRun/Sets(1).set.nTrialsPerRun) * Basics.nStimCat; % duration of one training trial, in seconds
+Sets(1).set.tTrial = Basics.tPreFixation + (Basics.tFixation + Sets(1).set.tStim + Sets(1).set.tTotalITI) * Basics.nStimCat; % duration of one training trial, in seconds
 Sets(1).set.tCond = Sets(1).set.tTrial * Sets(1).set.nSeq / 60; % duration of all training trials, in minutes
 Sets(1).set.tCondPerRun = Sets(1).set.tCond / Basics.nRun; % average expected duration of condition per run
 Sets(1).set = orderfields(Sets(1).set); % orders all fields in the structure alphabetically
@@ -341,7 +340,7 @@ for k = 1:Basics.nStimCat % determine the (random) occurences of oddballs (equal
      Data(1).data.orient(datasample(find(Data(1).data.stimIndex == k),Sets(1).set.nTargetPerCat,'Replace',false)) = 180; % set stimulus orientation to 180 (degree)
 end
 
-% SAMPLE ITIs FROM EXPONENTIAL DISTRIBUTION (MATLAB 2012 VERSION WORKAROUND)
+% % SAMPLE ITIs FROM EXPONENTIAL DISTRIBUTION (MATLAB 2012 VERSION WORKAROUND)
 % Data(1).data.tITI = nan(Sets(1).set.nTrials,1); % initalize
 % for i = 1:Sets(1).set.nTrials
 %     while isnan(Data(1).data.tITI(i)) || Data(1).data.tITI(i) < Sets(1).set.distLowerLim
@@ -349,7 +348,7 @@ end
 %     end
 % end
 
-% NEW SOLUTUON WITH FIXED RUN DURATION
+% SAMPLE ITIs FROM EXPONENTIAL DISTRIBUTION (WITH FIXED RUN DURATION)
 index = reshape(1:Sets(1).set.nTrials,Sets(1).set.nTrialsPerRun,Basics.nRun);
 Data(1).data.tITI = nan(Sets(1).set.nTrials,1); % initalize
 for run = 1:Basics.nRun
@@ -358,12 +357,13 @@ for run = 1:Basics.nRun
     Data(1).data.tITI(index(:,run)) = Data(1).data.tITI(index(:,run)) * Sets(1).set.tTotalITIPerRun; % multiply by duration of run ITIs
 end
 
-% TEST THE DISTRIBUTION
+% % % TEST THE DISTRIBUTION
 % index = reshape(1:600,600/Basics.nRun,Basics.nRun);
 % for run = 1:Basics.nRun
 %     sumArray(run) = sum(Data(1).data.tITI(index(:,run)));
 %     meanArray(run) = mean(Data(1).data.tITI(index(:,run)));
 % end
+% figure()
 % histogram(Data(1).data.tITI)
 % min(Data(1).data.tITI)
 % max(Data(1).data.tITI)
@@ -494,10 +494,6 @@ Data(2).data.tFlipDelay = nan(Sets(2).set.nTrials,1); % initalize empty array to
 Data(2).data.tFlipResp = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
 Data(2).data.tResponse = nan(Sets(2).set.nTrials,1); % initalize empty array to record flip time
 Sets(2).set = orderfields(Sets(2).set); % orders all fields in the structure alphabetically
-
-A = Sets(1).set.sequences;
-B = unique(Sets(2).set.sequences,'rows');
-find(ismember(A,B,'rows'))
 
 %% REPETITION TRIALS (SHORT) 
 
