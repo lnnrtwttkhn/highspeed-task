@@ -38,7 +38,7 @@ Psychtoolbox is included in this repo as a submodule and the paths are accessed 
 
 If you use this task in your work, please cite:
 
-```tex
+```
 Wittkuhn, L. and Schuck, N. W. (2020). Faster than thought: Detecting sub-second activation sequences with sequential fMRI pattern analysis. *bioRxiv*, [doi: 10.1101/2020.02.15.950667](http://dx.doi.org/10.1101/2020.02.15.950667).
 ```
 
@@ -57,7 +57,7 @@ The original authors of Haxby et al. (2001), *Science* hold the copyright of thi
 The original images were *not* transformed or modified for the purpose of the current study.
 If you reuse the visual stimuli inside the `/stimuli` folder, please make sure to cite the original authors:
 
-```tex
+```
 Haxby, J. V., Gobbini, M. I., Furey, M. L., Ishai, A., Schouten, J. L., and Pietrini, P. (2001). Distributed and overlapping representations of faces and objects in ventral temporal cortex. *Science*, 293(5539):2425–2430. [doi: 10.1126/science.1063736](http://dx.doi.org/10.1126/science.1063736)
 ```
 
