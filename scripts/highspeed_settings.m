@@ -13,9 +13,14 @@ fprintf('--------------------------------------------\n') % display task progres
 
 % GET COMPUTER DETAILS
 Parameters.computerName = computer; % save information about computer
-Parameters.computerHost = char(getHostName(java.net.InetAddress.getLocalHost));
 Parameters.computerMatlab = ['R' version('-release')]; % save information about operating systemversion('-release')
-
+try
+    Parameters.computerHost = char(getHostName(java.net.InetAddress.getLocalHost));
+catch ME
+    Parameters.computerHost = 'undefined';
+    clear ME
+end
+    
 % SET ROOT PATHS DEPENDING ON THE COMPUTER
 if strcmp(Parameters.computerHost,'lip-osx-003854') % lennart's macbook
     Parameters.pathRoot = fullfile('/Users','wittkuhn','Seafile'); % set root path
@@ -28,6 +33,7 @@ elseif strcmp(Parameters.computerHost,'NRCD-W7-472062') % windows computer in ne
 end
 
 % TRY TO ADD PSYCHTOOLBOX TO THE MATLAB SEARCH PATH
+addpath(genpath(fullfile('..','Psychtoolbox-3','Psychtoolbox')))
 Parameters.pathPsychtoolbox = fullfile(PsychtoolboxRoot); % set root path
 try
     Psychtoolboxversion
@@ -53,7 +59,7 @@ end
 
 % SET TASK PATHS
 Parameters.studyName = 'highspeed_task';
-Parameters.pathTask = fullfile(Parameters.pathRoot,Parameters.studyName); % path to the task folder
+Parameters.pathTask = fullfile(Parameters.pathRoot); % path to the task folder
 Parameters.pathScripts = fullfile(Parameters.pathTask,'scripts'); % path to the task script folder
 Parameters.pathPlots = fullfile(Parameters.pathTask,'plots'); % path to the task plot folder
 Parameters.pathStimuli = fullfile(Parameters.pathTask,'stimuli'); % path to the task stimuli folder
