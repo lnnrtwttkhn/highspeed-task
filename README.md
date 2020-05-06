@@ -8,16 +8,26 @@ This repository contains all code to run the behavioral task used in Wittkuhn & 
 
 The task consists of three conditions:
 
-1. In **slow trials** participants have to press a button in response to upside-down visual stimuli (20% of trials) and do nothing if pictures are presented upright (80% of trials).
-1. In **sequence trials** participants have to detect the serial position of a target image in a sequence of five images presented at varying speeds (32, 64, 128, 512, and 2048 ms inter-stimulus intervals) and indicate their response after a delay of 16 s after the onset of the object sequence.
-1. In **repetition trials**, participants have to perform the same detection task as in sequence task, except that two out of five visual stimuli are repeated a varying number of times and participant are instructed to indicate the serial position of *the first occurrence* of the second (target) stimulus
+### Slow trials
+
+In **slow trials** participants have to press a button in response to upside-down visual stimuli (20% of trials) and do nothing if pictures are presented upright (80% of trials).
+
+### Sequence trials
+
+In **sequence trials** participants have to detect the serial position of a target image in a sequence of five images presented at varying speeds (32, 64, 128, 512, and 2048 ms inter-stimulus intervals) and indicate their response after a delay of 16 s after the onset of the object sequence.
+
+### Repetition trials
+
+In **repetition trials**, participants have to perform the same detection task as in sequence task, except that two out of five visual stimuli are repeated a varying number of times and participant are instructed to indicate the serial position of *the first occurrence* of the second (target) stimulus
 
 Data reported in Wittkuhn & Schuck (2020), *bioRxiv* were acquired using Matlab version R2012b (Natick, Massachusetts, USA; The MathWorks Inc.) and the task was run on a Windows XP computer.
 
 ## Requirements
 
-- [Matlab version R2012b or higher (Natick, Massachusetts, USA; The MathWorks Inc.)](https://www.mathworks.com/products/matlab.html)
-- [Psychophysics Toolbox extensions; version 3.0.11](http://psychtoolbox.org/) - Psychtoolbox is included in this repo as a submodule and the paths are accessed by the task code
+- MATLAB version R2012b or higher (Natick, Massachusetts, USA; The MathWorks Inc.; see [here](https://www.mathworks.com/products/matlab.html) for details)
+- Psychophysics Toolbox extensions; version 3.0.11 (see [here](http://psychtoolbox.org/) for details)
+
+Psychtoolbox is included in this repo as a submodule and the paths are accessed by the task code
 
 ## Authors
 
@@ -26,7 +36,7 @@ Data reported in Wittkuhn & Schuck (2020), *bioRxiv* were acquired using Matlab 
 
 ## Acknowledgements
 
-If you use this task in your research, please cite:
+If you use this task in your work, please cite:
 
 ```tex
 Wittkuhn, L. and Schuck, N. W. (2020). Faster than thought: Detecting sub-second activation sequences with sequential fMRI pattern analysis. *bioRxiv*, [doi: 10.1101/2020.02.15.950667](http://dx.doi.org/10.1101/2020.02.15.950667).
@@ -38,12 +48,12 @@ Please see the license information below for details.
 
 ### Code
 
-All code inside the `/scripts` folder was written by Lennart Wittkuhn and is licensed under the [`Creative Commons Attribution-Share Alike 3.0` license](http://creativecommons.org/licenses/by-sa/3.0/).
+All code inside the `/scripts` folder was written by Lennart Wittkuhn and is licensed under the [Creative Commons Attribution-Share Alike 3.0 license](http://creativecommons.org/licenses/by-sa/3.0/).
 
 ### Stimuli
 
-The visual stimuli inside the `/stimuli` folder are taken from Haxby et al. (2001), *Science* and are available from http://data.pymvpa.org/datasets/haxby2001/.
-The original authors of Haxby et al. (2001), *Science* hold the copyright of this dataset and made it available under the terms of the [`Creative Commons Attribution-Share Alike 3.0` license](http://creativecommons.org/licenses/by-sa/3.0/).
+The visual stimuli inside the `/stimuli` folder are taken from Haxby et al. (2001), *Science* and are freely available from http://data.pymvpa.org/datasets/haxby2001/.
+The original authors of Haxby et al. (2001), *Science* hold the copyright of this dataset and made it available under the terms of the [Creative Commons Attribution-Share Alike 3.0 license](http://creativecommons.org/licenses/by-sa/3.0/).
 The original images were *not* transformed or modified for the purpose of the current study.
 If you reuse the visual stimuli inside the `/stimuli` folder, please make sure to cite the original authors:
 
