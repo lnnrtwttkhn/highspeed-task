@@ -1,0 +1,3 @@
+[submodule "Psychtoolbox-3"]
+	path = Psychtoolbox-3
+	url = https://github.com/Psychtoolbox-3/Psychtoolbox-3.git
