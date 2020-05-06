@@ -23,9 +23,11 @@ In **repetition trials**, participants have to perform the same detection task a
 - MATLAB version R2012b or higher (Natick, Massachusetts, USA; The MathWorks Inc.; see [here](https://www.mathworks.com/products/matlab.html) for details)
 - Psychophysics Toolbox extensions; version 3.0.11 (see [here](http://psychtoolbox.org/) for details)
 
-Psychtoolbox is included in this repo as a submodule and the paths are accessed by the task code
+Psychtoolbox is included in this repo as a submodule and the relevant paths are accessed by the task code.
 
-Data reported in Wittkuhn & Schuck (2020), *bioRxiv* were acquired using Matlab version R2012b (Natick, Massachusetts, USA; The MathWorks Inc.) and the task was run on a Windows XP computer.
+Data reported in Wittkuhn & Schuck (2020), *bioRxiv* were acquired using MATLAB version R2012b (Natick, Massachusetts, USA; The MathWorks Inc.) and the task was run on a Windows XP computer.
+
+The code was successfully tested using MATLAB version R2012b and R2017a.
 
 ## Authors
 
@@ -36,7 +38,6 @@ Data reported in Wittkuhn & Schuck (2020), *bioRxiv* were acquired using Matlab 
 
 If you use this task in your work, please cite:
 
-
 > Wittkuhn, L. and Schuck, N. W. (2020). Faster than thought: Detecting sub-second activation sequences with sequential fMRI pattern analysis. *bioRxiv*, [doi: 10.1101/2020.02.15.950667](http://dx.doi.org/10.1101/2020.02.15.950667).
 
 Please see the license information below for details.
@@ -45,7 +46,7 @@ Please see the license information below for details.
 
 ### Code
 
-All code inside the `/scripts` folder was written by Lennart Wittkuhn and is licensed under the [Creative Commons Attribution-Share Alike 3.0 license](http://creativecommons.org/licenses/by-sa/3.0/).
+All code inside the `/scripts` folder was written by Lennart Wittkuhn and is licensed under the [MIT license](/LICENSE).
 
 ### Stimuli
 
