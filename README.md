@@ -6,8 +6,6 @@ This repository contains all code to run the behavioral task used in Wittkuhn & 
 
 ![task](/task.png)
 
-The task consists of three conditions:
-
 ### Slow trials
 
 In **slow trials** participants have to press a button in response to upside-down visual stimuli (20% of trials) and do nothing if pictures are presented upright (80% of trials).
@@ -20,14 +18,14 @@ In **sequence trials** participants have to detect the serial position of a targ
 
 In **repetition trials**, participants have to perform the same detection task as in sequence task, except that two out of five visual stimuli are repeated a varying number of times and participant are instructed to indicate the serial position of *the first occurrence* of the second (target) stimulus
 
-Data reported in Wittkuhn & Schuck (2020), *bioRxiv* were acquired using Matlab version R2012b (Natick, Massachusetts, USA; The MathWorks Inc.) and the task was run on a Windows XP computer.
-
 ## Requirements
 
 - MATLAB version R2012b or higher (Natick, Massachusetts, USA; The MathWorks Inc.; see [here](https://www.mathworks.com/products/matlab.html) for details)
 - Psychophysics Toolbox extensions; version 3.0.11 (see [here](http://psychtoolbox.org/) for details)
 
 Psychtoolbox is included in this repo as a submodule and the paths are accessed by the task code
+
+Data reported in Wittkuhn & Schuck (2020), *bioRxiv* were acquired using Matlab version R2012b (Natick, Massachusetts, USA; The MathWorks Inc.) and the task was run on a Windows XP computer.
 
 ## Authors
 
