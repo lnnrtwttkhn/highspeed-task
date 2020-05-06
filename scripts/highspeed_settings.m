@@ -59,7 +59,7 @@ end
 
 % SET TASK PATHS
 Parameters.studyName = 'highspeed_task';
-Parameters.pathTask = fullfile(Parameters.pathRoot); % path to the task folder
+Parameters.pathTask = fullfile(Parameters.pathRoot, Parameters.studyName); % path to the task folder
 Parameters.pathScripts = fullfile(Parameters.pathTask,'scripts'); % path to the task script folder
 Parameters.pathPlots = fullfile(Parameters.pathTask,'plots'); % path to the task plot folder
 Parameters.pathStimuli = fullfile(Parameters.pathTask,'stimuli'); % path to the task stimuli folder
