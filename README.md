@@ -29,6 +29,21 @@ Data reported in Wittkuhn & Schuck (2020), *bioRxiv* were acquired using MATLAB 
 
 The code was successfully tested using MATLAB version R2012b and R2017a.
 
+## Usage
+
+1. In the command line (terminal) clone this repo (e.g., `git clone git@git.mpib-berlin.mpg.de:wittkuhn/highspeed_task.git`) which creates a folder `highspeed_task` in your current working directory (type `pwd` to find out the current working directory) that contains the files of this repo
+1. Go into the `highspeed_task` folder using `cd highspeed_task`
+1. Activate the Psychtoolbox-3 submodule with `git submodule update --init --recursive` (this clones the contents of the [Psychtoolbox repo](https://github.com/Psychtoolbox-3) into the `Psychtoolbox-3` folder)
+1. Open `/scripts/highspeed_run.m` in MATLAB
+1. Click `Run` in the MATLAB GUI
+1. MATLAB might tell you that "to run this file, you must change the MATLAB current folder". Select the default option to `Change Folder`.
+1. In the first dialogue box `Study mode` choose the study mode (e.g., `instructions_condition_1` for slow trials, `instructions_condition_2` for sequence and repetition trials, `practice`, `behavioral`, `mri`)
+1. In the second dialogue box, set `id`, `age`, `gender` (must be either `m`, `f`, or `o`), `session` (must be either `1` or `2`), `run` (`1` to `4`)
+1. In the third dialogue box, confirm your settings, otherwise `Cancel` and go back
+1. Enter the `cbal` counterbalancing factor (`1` to `8`) that determines the sequences used in sequence trials (see Methods section in the paper for details)
+
+Task instructions for participants (in German) as used in Wittkuhn & Schuck (2020), *bioRxiv* can be found in `highspeed_instructions.pdf`.
+
 ## Authors
 
 - [Lennart Wittkuhn](mailto:wittkuhn@mpib-berlin.mpg.de), Max Planck Institute for Human Development, Berlin, Germany
