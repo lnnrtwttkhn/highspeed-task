@@ -4,6 +4,8 @@
 
 This repository contains all code to run the behavioral task used in Wittkuhn & Schuck (2020), *bioRxiv*, [doi: 10.1101/2020.02.15.950667](http://dx.doi.org/10.1101/2020.02.15.950667)
 
+Please visit https://lennartwittkuhn.com/highspeed/ for more details about the project.
+
 ![task](/task.png)
 
 ### Slow trials
@@ -99,5 +101,5 @@ Details of the SFX (Single Use) License can be found [here](https://audiojungle.
 
 ### Contributing
 
-If you notice any issues or have questions of the task, please [contact Lennart Wittkuhn](mailto:wittkuhn@mpib-berlin.mpg.de) or create an Issue.
+If you notice any issues or have questions of the task, please [contact Lennart Wittkuhn](mailto:wittkuhn@mpib-berlin.mpg.de) or [create an issue](https://github.com/lnnrtwttkhn/highspeed-task/issues/new).
 Thanks!
