@@ -4,7 +4,7 @@
 
 This repository contains all code to run the behavioral task used in Wittkuhn & Schuck (2020), *bioRxiv*, [doi: 10.1101/2020.02.15.950667](http://dx.doi.org/10.1101/2020.02.15.950667)
 
-Please visit https://lennartwittkuhn.com/highspeed/ for more details about the project.
+Please visit https://wittkuhn.mpib.berlin/highspeed for more details about the project.
 
 ![task](/task.png)
 
