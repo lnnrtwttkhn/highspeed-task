@@ -2,9 +2,9 @@
 
 ## Description
 
-This repository contains all code to run the behavioral task used in Wittkuhn & Schuck (2020), *bioRxiv*, [doi: 10.1101/2020.02.15.950667](http://dx.doi.org/10.1101/2020.02.15.950667)
+This repository contains all code to run the behavioral task used in Wittkuhn & Schuck (2020), Dynamics of fMRI patterns reflect sub-second activation sequences and reveal replay in human visual cortex, *Nature Communications*.
 
-Please visit https://wittkuhn.mpib.berlin/highspeed for more details about the project.
+Please visit our project website at https://wittkuhn.mpib.berlin/highspeed for more details about the study.
 
 ![task](/task.png)
 
@@ -33,8 +33,8 @@ The code was successfully tested using MATLAB version R2012b and R2017a.
 
 ## Usage
 
-1. In the command line (terminal) clone this repo (e.g., `git clone git@git.mpib-berlin.mpg.de:wittkuhn/highspeed_task.git`) which creates a folder `highspeed_task` in your current working directory (type `pwd` to find out the current working directory) that contains the files of this repo
-1. Go into the `highspeed_task` folder using `cd highspeed_task`
+1. In the command line (terminal) clone this repo (if you use SSH: `git clone git@github.com:lnnrtwttkhn/highspeed-task.git` or if you use HTPPS: `git clone https://github.com/lnnrtwttkhn/highspeed-task`) which creates a folder `highspeed-task` in your current working directory (type `pwd` to find out the current working directory) that contains the files of this repo
+1. Go into the `highspeed-task` folder using `cd highspeed-task`
 1. Activate the Psychtoolbox-3 submodule with `git submodule update --init --recursive` (this clones the contents of the [Psychtoolbox repo](https://github.com/Psychtoolbox-3) into the `Psychtoolbox-3` folder)
 1. Open `/scripts/highspeed_run.m` in MATLAB
 1. Click `Run` in the MATLAB GUI
@@ -44,7 +44,7 @@ The code was successfully tested using MATLAB version R2012b and R2017a.
 1. In the third dialogue box, confirm your settings, otherwise `Cancel` and go back
 1. Enter the `cbal` counterbalancing factor (`1` to `8`) that determines the sequences used in sequence trials (see Methods section in the paper for details)
 
-Task instructions for participants (in German) as used in Wittkuhn & Schuck (2020), *bioRxiv* can be found in `highspeed_instructions.pdf`.
+Task instructions for participants (in German) as used in Wittkuhn & Schuck (2020), *Nature Communications* can be found in `highspeed_instructions.pdf`.
 
 ## Authors
 
@@ -54,6 +54,10 @@ Task instructions for participants (in German) as used in Wittkuhn & Schuck (202
 ## Acknowledgements
 
 If you use this task in your work, please cite:
+
+> Wittkuhn, L. and Schuck, N. W. (2020). Dynamics of fMRI patterns reflect sub-second activation sequences and reveal replay in human visual cortex. *Nature Communications*
+
+A preprint of the paper (old version) is available at:
 
 > Wittkuhn, L. and Schuck, N. W. (2020). Faster than thought: Detecting sub-second activation sequences with sequential fMRI pattern analysis. *bioRxiv*, [doi: 10.1101/2020.02.15.950667](http://dx.doi.org/10.1101/2020.02.15.950667).
 
@@ -72,9 +76,7 @@ The original authors of Haxby et al. (2001), *Science* hold the copyright of thi
 The original images were *not* transformed or modified for the purpose of the current study.
 If you reuse the visual stimuli inside the `/stimuli` folder, please make sure to cite the original authors:
 
-
 > Haxby, J. V., Gobbini, M. I., Furey, M. L., Ishai, A., Schouten, J. L., and Pietrini, P. (2001). Distributed and overlapping representations of faces and objects in ventral temporal cortex. *Science*, 293(5539):2425–2430. [doi: 10.1126/science.1063736](http://dx.doi.org/10.1126/science.1063736)
-
 
 ### Sounds
 
