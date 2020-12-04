@@ -2,7 +2,7 @@
 
 ## Description
 
-This repository contains all code to run the behavioral task used in Wittkuhn & Schuck (2020), Dynamics of fMRI patterns reflect sub-second activation sequences and reveal replay in human visual cortex, *Nature Communications*.
+This repository contains all code to run the behavioral task used in Wittkuhn & Schuck (2020), "Dynamics of fMRI patterns reflect sub-second activation sequences and reveal replay in human visual cortex", published in *Nature Communications*.
 
 Please visit our project website at https://wittkuhn.mpib.berlin/highspeed for more details about the study.
 
