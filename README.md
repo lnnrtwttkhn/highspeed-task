@@ -1,5 +1,7 @@
 # Highspeed Task
 
+[![DOI](https://zenodo.org/badge/310215989.svg)](https://zenodo.org/badge/latestdoi/310215989)
+
 ## Description
 
 This repository contains all code to run the behavioral task used in Wittkuhn & Schuck (2020), "Dynamics of fMRI patterns reflect sub-second activation sequences and reveal replay in human visual cortex", published in *Nature Communications*.
@@ -51,9 +53,9 @@ Task instructions for participants (in German) as used in Wittkuhn & Schuck (202
 - [Lennart Wittkuhn](mailto:wittkuhn@mpib-berlin.mpg.de), Max Planck Institute for Human Development, Berlin, Germany
 - [Nicolas W. Schuck](mailto:schuck@mpib-berlin.mpg.de), Max Planck Institute for Human Development, Berlin, Germany
 
-## Acknowledgements
+## Citation
 
-If you use this task in your work, please cite:
+If you use this task in your work, please use the Zenodo DOI linked above and cite the paper:
 
 > Wittkuhn, L. and Schuck, N. W. (2020). Dynamics of fMRI patterns reflect sub-second activation sequences and reveal replay in human visual cortex. *Nature Communications*
 
@@ -67,7 +69,7 @@ Please see the license information below for details.
 
 ### Code
 
-All code inside the `/scripts` folder was written by Lennart Wittkuhn and is licensed under the [MIT license](/LICENSE).
+All code inside the `/scripts` folder was written by Lennart Wittkuhn at the Max Planck Institute for Human Development, Berlin, Germany and is licensed under the [MIT license](/LICENSE).
 
 ### Stimuli
 
