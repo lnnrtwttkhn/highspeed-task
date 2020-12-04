@@ -44,7 +44,7 @@ The code was successfully tested using MATLAB version R2012b and R2017a.
 1. In the third dialogue box, confirm your settings, otherwise `Cancel` and go back
 1. Enter the `cbal` counterbalancing factor (`1` to `8`) that determines the sequences used in sequence trials (see Methods section in the paper for details)
 
-Task instructions for participants (in German) as used in Wittkuhn & Schuck (2020), *Nature Communications* can be found in `highspeed_instructions.pdf`.
+Task instructions for participants (in German) as used in Wittkuhn & Schuck (2020), *Nature Communications* can be found in [`highspeed_instructions.pdf`](highspeed_instructions.pdf).
 
 ## Authors
 
