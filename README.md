@@ -29,7 +29,7 @@ In **repetition trials**, participants have to perform the same detection task a
 
 Psychtoolbox is included in this repo as a submodule and the relevant paths are accessed by the task code.
 
-Data reported in Wittkuhn & Schuck (2020), *bioRxiv* were acquired using MATLAB version R2012b (Natick, Massachusetts, USA; The MathWorks Inc.) and the task was run on a Windows XP computer.
+Data reported in Wittkuhn & Schuck (2020), *Nature Communications* were acquired using MATLAB version R2012b (Natick, Massachusetts, USA; The MathWorks Inc.) and the task was run on a Windows XP computer.
 
 The code was successfully tested using MATLAB version R2012b and R2017a.
 
