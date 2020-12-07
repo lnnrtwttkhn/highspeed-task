@@ -69,7 +69,8 @@ Please see the license information below for details.
 
 ### Code
 
-All code inside the `/scripts` folder was written by Lennart Wittkuhn at the Max Planck Institute for Human Development, Berlin, Germany and is licensed under the [MIT license](/LICENSE).
+All code inside the `/scripts` folder was written by Lennart Wittkuhn at the Max Planck Institute for Human Development, Berlin, Germany and is licensed under the [Creative Commons Attribution-ShareAlike 4.0 International Public License](/LICENSE).
+Please see https://creativecommons.org/licenses/by-sa/4.0/ for details.
 
 ### Stimuli
 
